@@ -1,26 +1,71 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Earthy Theme Colors */
+  --background: #100C08; /* Smoky Black */
+  --surface: #1A1612; /* Card Background */
+  --input: #100C08; /* Input Background */
+  --muted: #E3DAC9; /* Bone (Subtle text) */
+  --foreground: #FFFAF0; /* Floral White (Primary text/Headings) */
+  --accent: #8FBC8F; /* Bright Olive Accent */
+
+  /* Explicit Earth palette variables for your React components */
+  --earth-smoky: #100C08; 
+  --earth-olive: #6B8E23;
+  --earth-bone: #E3DAC9;
+  --earth-floral: #FFFAF0;
+  --earth-accent: #8FBC8F; 
 }
 
 @theme inline {
+  /* Mapping root variables to Tailwind color classes */
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-input: var(--input);
+  --color-muted: var(--muted);
   --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  
+  /* Mapping custom Earth palette to Tailwind */
+  --color-earth-smoky: var(--earth-smoky);
+  --color-earth-olive: var(--earth-olive);
+  --color-earth-bone: var(--earth-bone);
+  --color-earth-floral: var(--earth-floral);
+  --color-earth-accent: var(--earth-accent);
+  
+  --radius-pill: 9999px;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Updated for Dark Mode: Fixes bright white browser autofill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #100C08 inset !important;
+  -webkit-text-fill-color: #FFFAF0 !important;
+  caret-color: #FFFAF0;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .card-entrance {
+    animation: card-in 420ms ease-out;
+  }
 }
