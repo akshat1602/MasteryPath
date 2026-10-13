@@ -1,0 +1,36 @@
+{
+  "topics": [
+    {
+      "slug": "two-pointers",
+      "title": "Two Pointers",
+      "description": "Technique using two indices to traverse an iterable structure.",
+      "estimated_minutes": 30,
+      "pattern_key": "two_pointer",
+      "prerequisites": []
+    },
+    {
+      "slug": "sliding-window",
+      "title": "Sliding Window",
+      "description": "Technique maintaining a subset of items in a window that expands or contracts.",
+      "estimated_minutes": 45,
+      "pattern_key": "sliding_window",
+      "prerequisites": ["two-pointers"]
+    },
+    {
+      "slug": "binary-search",
+      "title": "Binary Search",
+      "description": "Search algorithm that finds the position of a target value within a sorted array.",
+      "estimated_minutes": 40,
+      "pattern_key": "binary_search",
+      "prerequisites": ["two-pointers"]
+    },
+    {
+      "slug": "trees-dfs",
+      "title": "Trees & DFS",
+      "description": "Depth-first search traversal on tree data structures.",
+      "estimated_minutes": 60,
+      "pattern_key": "tree_dfs",
+      "prerequisites": []
+    }
+  ]
+}
