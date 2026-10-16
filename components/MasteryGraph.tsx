@@ -1,21 +1,38 @@
 'use client'
 
 import React, { useEffect, useState, useMemo } from 'react'
-import { 
-  ReactFlow, 
-  useNodesState, 
-  useEdgesState, 
-  Background, 
-  Controls, 
-  MiniMap, 
-  BackgroundVariant 
+import {
+  ReactFlow,
+  useNodesState,
+  useEdgesState,
+  Background,
+  Controls,
+  MiniMap,
+  BackgroundVariant,
+  type Node,
+  type Edge,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import TopicNode from './TopicNode'
 
-export default function MasteryGraph({ onNodeSelect }: { onNodeSelect?: (nodeId: string, nodeData: any) => void }) {
-  const [nodes, setNodes, onNodesChange] = useNodesState([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState([])
+// Use `type` (not `interface`) so it satisfies React Flow's Record<string, unknown> constraint
+export type TopicNodeData = {
+  label?: string
+  isMastered?: boolean
+  isDecaying?: boolean
+  supported?: boolean // true only for Two Pointers / Sliding Window
+  [key: string]: unknown
+}
+
+export type TopicFlowNode = Node<TopicNodeData>
+
+type MasteryGraphProps = {
+  onNodeSelect?: (nodeId: string, nodeData: TopicNodeData) => void
+}
+
+export default function MasteryGraph({ onNodeSelect }: MasteryGraphProps) {
+  const [nodes, setNodes, onNodesChange] = useNodesState<TopicFlowNode>([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -29,18 +46,18 @@ export default function MasteryGraph({ onNodeSelect }: { onNodeSelect?: (nodeId:
         if (!response.ok) {
           throw new Error(`Failed to fetch topics (Status ${response.status})`)
         }
-        const data = await response.json()
-        
+        const data: { nodes?: TopicFlowNode[]; edges?: Edge[] } = await response.json()
+
         // Ensure nodes use our custom node type 'topicNode'
-        const formattedNodes = (data.nodes || []).map((node: any) => ({
+        const formattedNodes: TopicFlowNode[] = (data.nodes ?? []).map((node) => ({
           ...node,
           type: node.type || 'topicNode',
         }))
 
         setNodes(formattedNodes)
-        setEdges(data.edges || [])
-      } catch (err: any) {
-        setError(err.message || 'Failed to load topic graph.')
+        setEdges(data.edges ?? [])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load topic graph.')
       } finally {
         setLoading(false)
       }
@@ -81,10 +98,10 @@ export default function MasteryGraph({ onNodeSelect }: { onNodeSelect?: (nodeId:
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#292725" />
         <Controls className="!bg-[#11100F] !border-[#292725] !rounded-xl !overflow-hidden [&>button]:!bg-[#11100F] [&>button]:!border-b-[#292725] [&>button]:!text-white hover:[&>button]:!bg-[#1A1816]" />
-        <MiniMap 
+        <MiniMap
           className="!bg-[#11100F] !border !border-[#292725] !rounded-xl overflow-hidden shadow-lg"
           nodeColor={(node) => {
-            const data = node.data as any
+            const data = node.data as TopicNodeData
             if (data?.isMastered) return '#34D399'
             if (data?.isDecaying) return '#EF4444'
             return '#6B7280'
