@@ -25,10 +25,10 @@ export default function Logo({
 
   const content = (
     <span
-      className={`inline-flex items-center gap-3 font-bold tracking-tight text-white ${s.text} ${className}`}
+      className={`inline-flex items-center gap-3 font-bold tracking-tight text-earth-floral ${s.text} ${className}`}
     >
       <span
-        className={`flex ${s.box} shrink-0 items-center justify-center rounded-lg border border-[#292725] bg-[#11100F]`}
+        className={`flex ${s.box} shrink-0 items-center justify-center rounded-lg border border-earth-bone/15 bg-surface`}
       >
         <Image
           src="/logo.svg"
@@ -44,7 +44,11 @@ export default function Logo({
   )
 
   return href ? (
-    <Link href={href} aria-label="MasteryPath home" className="inline-flex outline-none focus-visible:ring-2 focus-visible:ring-[#6B7280]/50 rounded-lg">
+    <Link
+      href={href}
+      aria-label="MasteryPath home"
+      className="inline-flex rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+    >
       {content}
     </Link>
   ) : (
