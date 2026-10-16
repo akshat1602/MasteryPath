@@ -1,0 +1,67 @@
+
+{
+  "Sliding Window": {
+    "patternName": "Sliding Window",
+    "coreIdea": "Maintain a contiguous window and expand or shrink it according to the problem's conditions.",
+    "invariants": [
+      "The window always represents a contiguous portion of the array.",
+      "The left and right boundaries move according to a clear rule.",
+      "The window's state is updated consistently when its boundaries change."
+    ],
+    "commonForms": [
+      "Fixed-size window",
+      "Variable-size window"
+    ],
+    "suitableProblemCharacteristics": [
+      "The problem involves a contiguous subarray or substring.",
+      "The window can be expanded or shrunk using a well-defined condition.",
+      "The problem can be solved efficiently by maintaining information about the current window."
+    ],
+    "commonMistakes": [
+      "Using sliding window when the required condition does not support the approach.",
+      "Incorrectly updating the window when moving a boundary.",
+      "Forgetting edge cases such as the smallest valid input.",
+      "Assuming positive numbers when the problem does not guarantee them."
+    ],
+    "generationRules": [
+      "Use a clear fixed-size or variable-size window.",
+      "Preserve the core reasoning of the Sliding Window pattern.",
+      "Keep the problem suitable for a beginner.",
+      "Specify input assumptions and constraints clearly.",
+      "Ensure examples and expected outputs agree with the problem statement.",
+      "Do not use Sliding Window when another technique is the natural solution."
+    ]
+  },
+  "Two Pointers": {
+    "patternName": "Two Pointers",
+    "coreIdea": "Use two indices to process a sequence efficiently, moving one or both pointers according to a clear condition.",
+    "invariants": [
+      "Each pointer has a defined position and role.",
+      "Pointer movement must be justified by the problem's logic.",
+      "The algorithm must preserve the information needed to reach the correct answer."
+    ],
+    "commonForms": [
+      "Two pointers starting at opposite ends of a sequence",
+      "Two pointers moving in the same direction"
+    ],
+    "suitableProblemCharacteristics": [
+      "The problem has a sequence or collection that can be traversed with two indices.",
+      "The relationship between the elements helps determine which pointer should move.",
+      "The pointer strategy provides a meaningful solution rather than being artificially forced."
+    ],
+    "commonMistakes": [
+      "Moving a pointer without a logical justification",
+      "Skipping valid candidates",
+      "Incorrectly handling empty or very small inputs",
+      "Assuming the input is sorted when the problem does not guarantee it"
+    ],
+    "generationRules": [
+      "Create a novel scenario, not merely a renamed version of a familiar problem.",
+      "Preserve the underlying algorithmic reasoning of the selected pattern.",
+      "Keep the problem suitable for a beginner learning Two Pointers.",
+      "Specify input assumptions and constraints clearly.",
+      "Ensure examples and expected outputs agree with the problem statement.",
+      "Do not invent a problem that only appears to use Two Pointers but actually requires a different core technique."
+    ]
+  }
+}
