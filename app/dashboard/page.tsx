@@ -25,6 +25,15 @@ function AnimatedNumber({ value, suffix = '', duration = 1000 }: { value: number
   return <span>{display.toString().padStart(2, '0')}{suffix}</span>
 }
 
+// Marks sections that show sample values instead of real student data
+function DemoBadge() {
+  return (
+    <span className="ml-2 inline-block rounded-full border border-amber-500/30 bg-amber-950/20 px-2 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-amber-300">
+      Demo data
+    </span>
+  )
+}
+
 // SVG Icons
 const Icons = {
   Book: () => <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
@@ -40,7 +49,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [showProgress, setShowProgress] = useState(false)
 
-  // Mock Data
+  // Mock Data (demo values only, not real student progress)
   const stats = { activePaths: 3, skillsMastered: 8, learningHours: 24, dayStreak: 5 }
   const recentPath = { title: "Data Structures & Algorithms", completed: 12, total: 20, progress: 60, next: "Trees" }
   const otherPaths = [
@@ -83,6 +92,13 @@ export default function DashboardPage() {
             </button>
           )}
         </div>
+
+        {/* Demo data notice */}
+        {!isLoading && (
+          <div role="note" className="mb-6 rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-[13px] text-amber-200">
+            <span className="font-semibold">Demo data.</span> The stats, paths and activity on this page are sample values, not your real progress. Real tracking will be connected once the progress database is agreed.
+          </div>
+        )}
 
         {/* Stats Row */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4 mb-12">
@@ -129,7 +145,7 @@ export default function DashboardPage() {
             ) : (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-[500ms]">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-[17px] font-bold tracking-tight">Continue learning</h2>
+                  <h2 className="text-[17px] font-bold tracking-tight">Continue learning<DemoBadge /></h2>
                   <button className="text-sm font-medium text-[#9A9692] hover:text-white transition-colors">View all →</button>
                 </div>
                 
@@ -177,7 +193,7 @@ export default function DashboardPage() {
                </>
              ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-[600ms] h-full flex flex-col">
-                  <h2 className="text-[17px] font-bold tracking-tight mb-4 text-[#9A9692]">7-Day Activity</h2>
+                  <h2 className="text-[17px] font-bold tracking-tight mb-4 text-[#9A9692]">7-Day Activity<DemoBadge /></h2>
                   <div className="rounded-2xl border border-[#242424] bg-[#0A0A0A] p-6 flex-1 flex flex-col justify-end">
                      <div className="flex items-end justify-between h-24 gap-2 mb-2">
                        {activityData.map((val, i) => (
@@ -204,7 +220,7 @@ export default function DashboardPage() {
         {/* Other Paths List */}
         {!isLoading && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-[700ms]">
-            <h2 className="text-[17px] font-bold tracking-tight mb-4">Your paths</h2>
+            <h2 className="text-[17px] font-bold tracking-tight mb-4">Your paths<DemoBadge /></h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {otherPaths.map((path, index) => (
                 <div key={index} className="group flex flex-col rounded-2xl border border-[#242424] bg-[#0A0A0A] p-5 transition-colors hover:border-[#3A3A3A] relative">
