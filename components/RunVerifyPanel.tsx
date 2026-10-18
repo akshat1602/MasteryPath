@@ -77,7 +77,7 @@ export default function RunVerifyPanel({ testCases }: Props) {
           </p>
           <ul className="space-y-1 text-xs font-mono text-[#D0D0D0]">
             {results.map((r) => (
-              <li key={r.testCase} className="flex items-center justify-between">
+              <li key={r.testCase} className="flex items-center justify-between gap-3">
                 <span>Test {r.testCase}</span>
                 <span className={r.passed ? 'text-emerald-300' : 'text-red-300'}>
                   {r.passed ? 'Passed' : 'Wrong answer'}
@@ -101,7 +101,7 @@ export default function RunVerifyPanel({ testCases }: Props) {
             {failed ? ` (test ${failed.testCase})` : ''}
           </p>
           {detail && (
-            <pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-lg bg-[#090807] p-3 text-xs text-[#D0D0D0] font-mono">
+            <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-[#090807] p-3 text-xs text-[#D0D0D0] font-mono">
               {detail}
             </pre>
           )}
@@ -122,9 +122,9 @@ export default function RunVerifyPanel({ testCases }: Props) {
   }
 
   return (
-    <section className="rounded-2xl border border-[#292725] bg-[#11100F] p-6 space-y-4" aria-labelledby="solve-heading">
-      <div className="flex items-center justify-between gap-4">
-        <h3 id="solve-heading" className="text-lg font-semibold">
+    <section className="rounded-2xl border border-[#292725] bg-[#11100F] p-4 space-y-4 sm:p-6" aria-labelledby="solve-heading">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 id="solve-heading" className="whitespace-nowrap text-lg font-semibold">
           Your Solution
         </h3>
         <div className="flex items-center gap-2">
@@ -163,12 +163,12 @@ export default function RunVerifyPanel({ testCases }: Props) {
         />
       </div>
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <p className="text-xs text-[#73706D]">Runs up to {Math.min(testCases.length, 5)} tests. This can take a little while.</p>
         <button
           onClick={handleRun}
           disabled={running}
-          className="h-10 px-5 rounded-lg bg-white text-[#090807] text-sm font-semibold hover:bg-[#E5E5E5] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-10 w-full whitespace-nowrap px-5 sm:w-auto rounded-lg bg-white text-[#090807] text-sm font-semibold hover:bg-[#E5E5E5] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {running ? 'Running tests…' : 'Run & Verify'}
         </button>

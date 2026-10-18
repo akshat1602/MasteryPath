@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 // --- Helper Components ---
 
@@ -86,9 +87,14 @@ export default function DashboardPage() {
           </div>
           
           {!isLoading && (
-            <button className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-[14px] font-semibold text-[#090807] transition-all hover:bg-[#F3F4F6] hover:-translate-y-[1px] hover:shadow-[0_8px_25px_rgba(255,255,255,0.15)] focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#050505] outline-none">
+            <button
+              disabled
+              title="Coming soon"
+              aria-label="Create learning path (coming soon)"
+              className="cursor-not-allowed opacity-60 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-[14px] font-semibold text-[#090807] transition-all outline-none"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"></path></svg>
-              Create learning path
+              Create learning path · Soon
             </button>
           )}
         </div>
@@ -146,7 +152,7 @@ export default function DashboardPage() {
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-[500ms]">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-[17px] font-bold tracking-tight">Continue learning<DemoBadge /></h2>
-                  <button className="text-sm font-medium text-[#9A9692] hover:text-white transition-colors">View all →</button>
+                  <Link href="/dashboard/paths" className="text-sm font-medium text-[#9A9692] hover:text-white transition-colors">View all →</Link>
                 </div>
                 
                 <div className="group rounded-2xl border border-[#242424] bg-[#0A0A0A] p-6 transition-all hover:border-[#4B5563] hover:shadow-[0_0_30px_rgba(255,255,255,0.03)] relative overflow-hidden cursor-pointer">
