@@ -44,10 +44,10 @@ const Icons = {
   Code: () => <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>,
   More: () => <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>,
   AlertTriangle: () => <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>,
-  Refresh: () => <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+  Refresh: () => <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>,
+  Sparkles: () => <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
 }
 
-// --- Main Page Component ---
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [showProgress, setShowProgress] = useState(false)
@@ -65,7 +65,7 @@ export default function DashboardPage() {
   const transferGapData = {
     overallRecall: 88,
     overallTransfer: 64,
-    gap: 24, // Recall - Transfer
+    gap: 24,
     riskPatterns: [
       { pattern: 'Two Pointers', recall: 92, transfer: 68, gap: 24, slug: 'two-pointers' },
       { pattern: 'Sliding Window', recall: 84, transfer: 58, gap: 26, slug: 'sliding-window' }
@@ -104,7 +104,6 @@ export default function DashboardPage() {
   ]
 
   useEffect(() => {
-    // Simulate data fetch
     const timer1 = setTimeout(() => setIsLoading(false), 1200)
     const timer2 = setTimeout(() => setShowProgress(true), 1300)
     return () => { clearTimeout(timer1); clearTimeout(timer2) }
@@ -151,7 +150,7 @@ export default function DashboardPage() {
         )}
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 mb-6">
           {isLoading ? (
             Array(4).fill(0).map((_, i) => (
               <div key={i} className="h-[104px] rounded-2xl bg-[#0A0A0A] border border-[#242424] p-5 flex flex-col justify-between">
@@ -167,7 +166,7 @@ export default function DashboardPage() {
               { icon: <Icons.Book />, value: stats.activePaths, label: 'Active paths', delay: 'delay-[100ms]' },
               { icon: <Icons.Trophy />, value: stats.skillsMastered, label: 'Skills mastered', delay: 'delay-[200ms]' },
               { icon: <Icons.Clock />, value: stats.learningHours, suffix: 'h', label: 'Learning hours', delay: 'delay-[300ms]' },
-              { icon: <Icons.Flame />, value: stats.dayStreak, label: 'Day streak', delay: 'delay-[400ms]' }
+              { icon: <Icons.Flame />, value: stats.dayStreak, label: 'Day streak (active audits)', delay: 'delay-[400ms]' }
             ].map((stat, i) => (
               <div key={i} className={`animate-in fade-in slide-in-from-bottom-4 duration-700 ${stat.delay} rounded-2xl border border-[#242424] bg-[#0A0A0A] p-5 flex flex-col justify-between transition-colors hover:border-[#3A3A3A]`}>
                 <div className="text-[#9A9692] mb-3">{stat.icon}</div>
@@ -181,6 +180,41 @@ export default function DashboardPage() {
             ))
           )}
         </div>
+
+        {/* --- MODULE 8 ENGAGEMENT: WEEKLY FUNDAMENTALS AUDIT CARD --- */}
+        {!isLoading && (
+          <div className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-[420ms] rounded-2xl border border-[#382E25] bg-gradient-to-r from-[#17120E] to-[#120F0D] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-lg">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="flex h-2 w-2 rounded-full bg-amber-400 animate-ping"></span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">
+                  Weekly Fundamentals Audit Due
+                </span>
+                <span className="rounded-full border border-amber-500/30 bg-amber-950/40 px-2 py-0.5 text-[10px] text-amber-200">
+                  Streak Protected
+                </span>
+              </div>
+              <h2 className="text-base font-bold text-white">
+                Preserve your foundational knowledge on Two Pointers
+              </h2>
+              <p className="text-xs text-[#A8A39E] max-w-xl leading-relaxed">
+                Your 5-day streak is tied to active retention checks rather than passive logins[cite: 15, 18]. Complete this short 2-minute audit to keep prerequisite decay from spreading to tree and graph algorithms[cite: 17].
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <Link
+                href="/practice/two-pointers"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs font-semibold text-[#0E0D0C] transition-all hover:bg-[#E5E5E5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                <span>Start Weekly Audit</span>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* --- RESEARCH ANALYTICS ROW: Transfer Gap & Retention Queue --- */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
@@ -202,7 +236,7 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <p className="text-xs text-[#9A9692] mb-5 leading-relaxed">
-                    Measures divergence between familiar recall and novel variation transfer. A high gap reveals vibe-coding rote memorization.
+                    Measures divergence between familiar recall and novel variation transfer. A high gap reveals vibe-coding rote memorization[cite: 17].
                   </p>
 
                   {/* Dual Comparison Bars */}
@@ -264,7 +298,7 @@ export default function DashboardPage() {
                     <span className="text-[11px] text-[#73706D] font-medium">Modified SM-2 Scheduler</span>
                   </div>
                   <p className="text-xs text-[#9A9692] mb-4">
-                    Fundamentals scheduled for resurfacing to prevent silent memory decay while you advance.
+                    Fundamentals scheduled for resurfacing to prevent silent memory decay while you advance[cite: 17].
                   </p>
 
                   <div className="space-y-2.5">
@@ -304,7 +338,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-[#1F1F1F] flex items-center justify-between text-[11px] text-[#73706D]">
-                  <span>Reschedules nightly via batch cloud worker</span>
+                  <span>Reschedules nightly via batch cloud worker[cite: 15]</span>
                   <Link href="/dashboard/paths" className="text-[#A78BFA] hover:underline">Full Skill Graph →</Link>
                 </div>
               </div>
@@ -411,7 +445,7 @@ export default function DashboardPage() {
                   </button>
 
                   <div className="mb-6">
-                    <span className="inline-block px-2.5 py-1 mb-3 rounded-full border border-[#242424] bg-[#141414] text-[11px] font-semibold text-[#9A9692] tracking-wide uppercase">
+                    <span className="inline-block px-2.5 py-1 mb-3 rounded-full border border-[#242424] bg-[#141210] text-[11px] font-semibold text-[#9A9692] tracking-wide uppercase">
                       {path.category}
                     </span>
                     <h3 className="font-bold text-white text-[15px] pr-8">{path.title}</h3>

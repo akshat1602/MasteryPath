@@ -2,15 +2,16 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { generateProblem } from '@/lib/services/problemService'
 import type { GeneratedProblem } from '@/lib/ai/problem-types'
-import { getTopicBySlug } from '@/lib/topics'
+import { TOPICS, getTopicBySlug } from '@/lib/topics'
 import RunVerifyPanel from '@/components/RunVerifyPanel'
 import CopyButton from '@/components/CopyButton'
 
 export default function PracticeTopicPage() {
   const params = useParams<{ topic: string }>()
+  const router = useRouter()
   const topic = getTopicBySlug(params.topic)
 
   const [loading, setLoading] = useState(false)
@@ -35,6 +36,10 @@ export default function PracticeTopicPage() {
     }
   }
 
+  const handleTopicChange = (newSlug: string) => {
+    router.push(`/practice/${newSlug}`)
+  }
+
   const shell = (children: React.ReactNode) => (
     <div className="min-h-screen bg-[#090807] text-white px-6 py-10">
       <div className="mx-auto max-w-4xl">{children}</div>
@@ -56,18 +61,51 @@ export default function PracticeTopicPage() {
     )
   }
 
-  if (!topic.pattern) {
+  if (topic.status === 'pending' || !topic.pattern) {
     return shell(
       <>
-        <div className="mb-8 border-b border-[#292725] pb-4">{backLink}</div>
-        <div className="rounded-2xl border border-[#292725] bg-[#11100F] p-10 text-center space-y-3">
-          <span className="rounded-full bg-[#1A1816] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#9A9692] border border-[#292725]">
-            Coming soon
+        <div className="mb-8 border-b border-[#292725] pb-4 flex items-center justify-between">
+          {backLink}
+          {/* Dropdown to switch to ready topics */}
+          <select
+            value={topic.slug}
+            onChange={(e) => handleTopicChange(e.target.value)}
+            className="h-9 rounded-lg border border-[#292725] bg-[#11100F] px-3 text-xs text-white outline-none focus:border-[#A78BFA]"
+          >
+            {TOPICS.map((t) => (
+              <option key={t.slug} value={t.slug} disabled={t.status === 'pending'}>
+                {t.label} {t.status === 'pending' ? '· Coming soon' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="rounded-2xl border border-[#292725] bg-[#11100F] p-10 text-center space-y-4">
+          <span className="rounded-full bg-[#1A1816] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-300 border border-amber-500/30">
+            Pending Backend Validation
           </span>
           <h1 className="text-2xl font-bold">{topic.label}</h1>
-          <p className="text-sm text-[#9A9692]">
-            AI problem generation for this topic isn&apos;t available yet. It will unlock once its generator and validator are built and tested.
+          <p className="text-sm text-[#9A9692] max-w-md mx-auto leading-relaxed">
+            Problem generation and reference validator pipeline for {topic.label} are currently under integration. This topic will unlock as soon as backend end-to-end verification completes.
           </p>
+
+          {/* Sub-problem status list */}
+          {topic.problems.length > 0 && (
+            <div className="pt-6 border-t border-[#292725] max-w-md mx-auto text-left">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#73706D] mb-3">Planned Problem Types</h3>
+              <ul className="space-y-2 text-xs">
+                {topic.problems.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between p-2.5 rounded-lg border border-[#242424] bg-[#141210]">
+                    <span className="text-[#D0D0D0]">{p.title}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-mono ${
+                      p.status === 'tested' ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/30' : 'bg-[#1F1F1F] text-[#73706D]'
+                    }`}>
+                      {p.status === 'tested' ? 'Tested' : 'Pending'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </>,
     )
@@ -75,31 +113,72 @@ export default function PracticeTopicPage() {
 
   return shell(
     <>
+      {/* Navigation & Topic Dropdown Bar */}
       <div className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b border-[#292725] pb-4">
         {backLink}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <label htmlFor="topic-selector" className="sr-only">Switch Topic</label>
+          <select
+            id="topic-selector"
+            value={topic.slug}
+            onChange={(e) => handleTopicChange(e.target.value)}
+            className="h-9 rounded-lg border border-[#292725] bg-[#11100F] px-3 text-xs font-medium text-white outline-none focus:border-[#A78BFA]"
+          >
+            {TOPICS.map((t) => (
+              <option key={t.slug} value={t.slug} disabled={t.status === 'pending'}>
+                {t.label} {t.status === 'pending' ? '· Coming soon' : ''}
+              </option>
+            ))}
+          </select>
           <span className="rounded-full bg-[#1A1816] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#A78BFA] border border-[#292725]">
-            {topic.label}
-          </span>
-          <span className="rounded-full bg-[#1A1816] px-3 py-1 text-xs text-[#9A9692] border border-[#292725]">
-            Difficulty: adaptive (coming soon)
+            {topic.category}
           </span>
         </div>
       </div>
 
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* Problem Workspace Header */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Problem Workspace</h1>
-          <p className="text-sm text-[#9A9692] mt-1">Generated by the AI engine and checked against a trusted algorithm.</p>
+          <p className="text-sm text-[#9A9692] mt-1">Generated by the AI engine and verified against sandbox test cases.</p>
         </div>
         <button
           onClick={handleGenerate}
           disabled={loading}
-          className="h-10 w-full whitespace-nowrap px-4 sm:w-auto rounded-lg bg-white text-[#090807] text-sm font-semibold hover:bg-[#E5E5E5] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-10 w-full whitespace-nowrap px-5 sm:w-auto rounded-lg bg-white text-[#090807] text-sm font-semibold hover:bg-[#E5E5E5] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Generating… (up to a minute)' : problem ? 'Generate New Problem' : 'Generate Problem'}
         </button>
       </div>
+
+      {/* Sub-Problem Variations Tracked in Topic */}
+      {topic.problems.length > 0 && (
+        <div className="mb-8 rounded-xl border border-[#242220] bg-[#11100F] p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#73706D]">
+              Topic Problem Variants & Validation Status
+            </h3>
+            <span className="text-[11px] text-[#A78BFA] font-mono">Module 3 Scope</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {topic.problems.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center gap-2 rounded-lg border border-[#292725] bg-[#141210] px-3 py-1.5 text-xs"
+              >
+                <span className="text-[#D0D0D0] font-medium">{p.title}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] uppercase font-mono ${
+                  p.status === 'tested'
+                    ? 'border border-emerald-500/30 bg-emerald-950/40 text-emerald-300'
+                    : 'border border-amber-500/30 bg-amber-950/30 text-amber-300'
+                }`}>
+                  {p.status === 'tested' ? '✓ Tested' : 'Pending'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {loading && !problem && (
         <div className="rounded-2xl border border-[#292725] bg-[#11100F] p-12 text-center space-y-4">
@@ -110,7 +189,7 @@ export default function PracticeTopicPage() {
 
       {!loading && !problem && !error && (
         <div className="rounded-2xl border border-dashed border-[#292725] p-12 text-center text-sm text-[#9A9692]">
-          Click <span className="text-white font-semibold">Generate Problem</span> to start.
+          Click <span className="text-white font-semibold">Generate Problem</span> to create a verified variation.
         </div>
       )}
 
