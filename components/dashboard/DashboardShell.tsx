@@ -23,7 +23,7 @@ const NAV_ITEMS = [
   { name: 'Overview', href: '/dashboard', icon: <Icons.Overview /> },
   { name: 'Learning Paths', href: '/dashboard/paths', icon: <Icons.Paths /> },
   { name: 'Progress', href: '/dashboard/progress', icon: <Icons.Progress /> },
-  { name: 'Settings', href: 'dashboard/settings', icon: <Icons.Settings /> },
+  { name: 'Settings', href: '/dashboard/settings', icon: <Icons.Settings /> },
 ]
 
 interface DashboardShellProps {
@@ -201,7 +201,7 @@ export default function DashboardShell({ user, children }: DashboardShellProps) 
                 </div>
                 <div className="py-1">
                   <Link 
-                    href="dashboard/settings"
+                    href="/dashboard/settings"
                     onClick={() => setIsProfileDropdownOpen(false)}
                     className="flex items-center gap-2 px-4 py-2 text-sm text-[#9A9692] hover:bg-white/5 hover:text-white transition-colors"
                   >

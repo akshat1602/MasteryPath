@@ -7,6 +7,7 @@ import { generateProblem } from '@/lib/services/problemService'
 import type { GeneratedProblem } from '@/lib/ai/problem-types'
 import { getTopicBySlug } from '@/lib/topics'
 import RunVerifyPanel from '@/components/RunVerifyPanel'
+import CopyButton from '@/components/CopyButton'
 
 export default function PracticeTopicPage() {
   const params = useParams<{ topic: string }>()
@@ -158,7 +159,10 @@ export default function PracticeTopicPage() {
               <div key={i} className="rounded-xl border border-[#292725] bg-[#11100F] p-6 space-y-3 font-mono text-sm">
                 <div className="text-xs uppercase tracking-wider text-[#73706D] font-sans font-semibold">Example {i + 1}</div>
                 <div>
-                  <span className="text-[#9A9692]">Input:</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#9A9692]">Input:</span>
+                    <CopyButton text={ex.input} />
+                  </div>
                   <pre className="mt-1 whitespace-pre-wrap text-white">{ex.input}</pre>
                 </div>
                 <div>
@@ -190,6 +194,6 @@ export default function PracticeTopicPage() {
           <RunVerifyPanel key={problemId} testCases={problem.testCases} />
         </div>
       )}
-    </>,
+    </>
   )
 }

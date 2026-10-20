@@ -42,7 +42,9 @@ const Icons = {
   Clock: () => <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
   Flame: () => <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" /></svg>,
   Code: () => <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>,
-  More: () => <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>
+  More: () => <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>,
+  AlertTriangle: () => <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>,
+  Refresh: () => <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
 }
 
 // --- Main Page Component ---
@@ -50,7 +52,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [showProgress, setShowProgress] = useState(false)
 
-  // Mock Data (demo values only, not real student progress)
+  // Mock Data (sample values illustrating core research metrics)
   const stats = { activePaths: 3, skillsMastered: 8, learningHours: 24, dayStreak: 5 }
   const recentPath = { title: "Data Structures & Algorithms", completed: 12, total: 20, progress: 60, next: "Trees" }
   const otherPaths = [
@@ -58,6 +60,48 @@ export default function DashboardPage() {
     { title: "System Design Prep", category: "Architecture", progress: 15, lastActive: "1 week ago" }
   ]
   const activityData = [40, 70, 45, 90, 60, 100, 80] // percentages for 7 days
+
+  // Transfer Gap Analysis Data (Paper 1 & Module 5)
+  const transferGapData = {
+    overallRecall: 88,
+    overallTransfer: 64,
+    gap: 24, // Recall - Transfer
+    riskPatterns: [
+      { pattern: 'Two Pointers', recall: 92, transfer: 68, gap: 24, slug: 'two-pointers' },
+      { pattern: 'Sliding Window', recall: 84, transfer: 58, gap: 26, slug: 'sliding-window' }
+    ]
+  }
+
+  // Retention Review Queue Data (Module 6 - Modified SM-2 Scheduler)
+  const retentionQueue = [
+    {
+      topic: 'Two Pointers (Opposite Direction)',
+      pattern: 'Two Pointers',
+      slug: 'two-pointers',
+      retentionScore: 42,
+      dueStatus: 'Overdue (2 days)',
+      priority: 'high',
+      intervalDays: 3
+    },
+    {
+      topic: 'Fixed Window Aggregation',
+      pattern: 'Sliding Window',
+      slug: 'sliding-window',
+      retentionScore: 58,
+      dueStatus: 'Due today',
+      priority: 'medium',
+      intervalDays: 7
+    },
+    {
+      topic: 'Prefix Sum Lookup',
+      pattern: 'Hash Map',
+      slug: 'hash-map',
+      retentionScore: 71,
+      dueStatus: 'Due in 2 days',
+      priority: 'low',
+      intervalDays: 14
+    }
+  ]
 
   useEffect(() => {
     // Simulate data fetch
@@ -81,7 +125,7 @@ export default function DashboardPage() {
             ) : (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <h1 className="mb-2 text-3xl font-bold tracking-tight text-white">Welcome back!</h1>
-                <p className="text-[#9A9692] text-[15px]">Ready to make progress today?</p>
+                <p className="text-[#9A9692] text-[15px]">Ready to turn concepts into retained, transferable skills?</p>
               </div>
             )}
           </div>
@@ -102,12 +146,12 @@ export default function DashboardPage() {
         {/* Demo data notice */}
         {!isLoading && (
           <div role="note" className="mb-6 rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-[13px] text-amber-200">
-            <span className="font-semibold">Demo data.</span> The stats, paths and activity on this page are sample values, not your real progress. Real tracking will be connected once the progress database is agreed.
+            <span className="font-semibold">Demo data.</span> The metrics, transfer gaps, and review queues below are sample values for evaluation purposes. Live data connects once user study persistence is enabled.
           </div>
         )}
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 mb-12">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 mb-8">
           {isLoading ? (
             Array(4).fill(0).map((_, i) => (
               <div key={i} className="h-[104px] rounded-2xl bg-[#0A0A0A] border border-[#242424] p-5 flex flex-col justify-between">
@@ -138,6 +182,137 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* --- RESEARCH ANALYTICS ROW: Transfer Gap & Retention Queue --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+          
+          {/* Transfer Gap Indicator Widget */}
+          <div className="flex flex-col">
+            {isLoading ? (
+              <div className="h-[220px] rounded-2xl bg-[#0A0A0A] border border-[#242424] animate-pulse"></div>
+            ) : (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-[450ms] rounded-2xl border border-[#242424] bg-[#0A0A0A] p-6 flex flex-col justify-between h-full">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-2 w-2 rounded-full bg-[#A78BFA]"></span>
+                      <h2 className="text-[16px] font-bold tracking-tight text-white">Transfer Gap Analysis<DemoBadge /></h2>
+                    </div>
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-[#A78BFA] bg-[#A78BFA]/10 border border-[#A78BFA]/30 px-2 py-0.5 rounded-full">
+                      Δ {transferGapData.gap}% gap
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#9A9692] mb-5 leading-relaxed">
+                    Measures divergence between familiar recall and novel variation transfer. A high gap reveals vibe-coding rote memorization.
+                  </p>
+
+                  {/* Dual Comparison Bars */}
+                  <div className="space-y-3.5 mb-6">
+                    <div>
+                      <div className="flex justify-between text-xs font-medium mb-1.5">
+                        <span className="text-[#9A9692]">Concept Recall (Familiar Seed Problems)</span>
+                        <span className="text-white font-mono">{transferGapData.overallRecall}%</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-[#1F1F1F] overflow-hidden">
+                        <div 
+                          className="h-full bg-emerald-400 transition-all duration-1000 ease-out rounded-full" 
+                          style={{ width: showProgress ? `${transferGapData.overallRecall}%` : '0%' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-xs font-medium mb-1.5">
+                        <span className="text-[#9A9692]">Variation Transfer (Novel Unseen Problems)</span>
+                        <span className="text-white font-mono">{transferGapData.overallTransfer}%</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-[#1F1F1F] overflow-hidden">
+                        <div 
+                          className="h-full bg-[#A78BFA] transition-all duration-1000 ease-out rounded-full" 
+                          style={{ width: showProgress ? `${transferGapData.overallTransfer}%` : '0%' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Micro Alert for Highest Gap */}
+                <div className="rounded-xl border border-[#2E2419] bg-[#1A140F] p-3 flex items-start gap-3">
+                  <div className="text-amber-400 mt-0.5"><Icons.AlertTriangle /></div>
+                  <div className="text-xs">
+                    <span className="text-amber-200 font-semibold">Priority check: </span>
+                    <span className="text-[#C4BDB5]">
+                      Sliding Window exhibits a 26% transfer gap. Practice unseen variations to bridge structural understanding.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Retention Review Queue Widget (SM-2 Scheduler) */}
+          <div className="flex flex-col">
+            {isLoading ? (
+              <div className="h-[220px] rounded-2xl bg-[#0A0A0A] border border-[#242424] animate-pulse"></div>
+            ) : (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-[500ms] rounded-2xl border border-[#242424] bg-[#0A0A0A] p-6 flex flex-col justify-between h-full">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-2 w-2 rounded-full bg-red-400 animate-pulse"></span>
+                      <h2 className="text-[16px] font-bold tracking-tight text-white">Retention Queue<DemoBadge /></h2>
+                    </div>
+                    <span className="text-[11px] text-[#73706D] font-medium">Modified SM-2 Scheduler</span>
+                  </div>
+                  <p className="text-xs text-[#9A9692] mb-4">
+                    Fundamentals scheduled for resurfacing to prevent silent memory decay while you advance.
+                  </p>
+
+                  <div className="space-y-2.5">
+                    {retentionQueue.map((item, idx) => (
+                      <div 
+                        key={idx} 
+                        className="flex items-center justify-between p-3 rounded-xl border border-[#1F1F1F] bg-[#121212] hover:border-[#333333] transition-colors"
+                      >
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-white">{item.topic}</span>
+                            <span className={`text-[10px] font-medium px-2 py-0.2 rounded-full border ${
+                              item.priority === 'high' 
+                                ? 'border-red-500/30 bg-red-950/30 text-red-300' 
+                                : item.priority === 'medium'
+                                ? 'border-amber-500/30 bg-amber-950/30 text-amber-300'
+                                : 'border-[#333] bg-[#1A1A1A] text-[#9A9692]'
+                            }`}>
+                              {item.dueStatus}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-[#73706D]">
+                            Retention: <span className="text-[#A5A19D] font-mono">{item.retentionScore}%</span> · Interval: {item.intervalDays}d
+                          </div>
+                        </div>
+
+                        <Link
+                          href={`/practice/${item.slug}`}
+                          className="flex items-center gap-1.5 rounded-lg border border-[#333] bg-[#1A1A1A] px-2.5 py-1.5 text-xs font-medium text-white hover:bg-white hover:text-black transition-colors"
+                        >
+                          <Icons.Refresh />
+                          <span>Review</span>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-[#1F1F1F] flex items-center justify-between text-[11px] text-[#73706D]">
+                  <span>Reschedules nightly via batch cloud worker</span>
+                  <Link href="/dashboard/paths" className="text-[#A78BFA] hover:underline">Full Skill Graph →</Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+
         {/* Middle Section: Recent Path & Activity Chart */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
           
@@ -149,7 +324,7 @@ export default function DashboardPage() {
                 <div className="h-[160px] rounded-2xl bg-[#0A0A0A] border border-[#242424] animate-pulse"></div>
               </>
             ) : (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-[500ms]">
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-[550ms]">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-[17px] font-bold tracking-tight">Continue learning<DemoBadge /></h2>
                   <Link href="/dashboard/paths" className="text-sm font-medium text-[#9A9692] hover:text-white transition-colors">View all →</Link>

@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import type { GeneratedProblem } from '@/lib/ai/problem-types'
 import type { Judge0Response, Judge0TestResult } from '@/types/api'
 import { LANGUAGES, runAndVerify, type LanguageId } from '@/lib/services/judgeService'
+import { STARTERS } from '@/lib/starterCode'
 
 type Props = {
   testCases: GeneratedProblem['testCases']
@@ -29,7 +30,7 @@ function describeFailure(r?: Judge0TestResult): { label: string; detail: string 
 
 export default function RunVerifyPanel({ testCases }: Props) {
   const [languageId, setLanguageId] = useState<LanguageId>(LANGUAGES[0].id)
-  const [code, setCode] = useState('')
+  const [code, setCode] = useState<string>(STARTERS[LANGUAGES[0].id])
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<Judge0Response | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -38,7 +39,7 @@ export default function RunVerifyPanel({ testCases }: Props) {
     setError(null)
     setResult(null)
 
-    if (!code.trim()) {
+    if (!code.trim() || code === STARTERS[languageId]) {
       setError('Write some code before running.')
       return
     }
@@ -134,9 +135,13 @@ export default function RunVerifyPanel({ testCases }: Props) {
           <select
             id="language"
             value={languageId}
-            onChange={(e) => setLanguageId(Number(e.target.value) as LanguageId)}
+            onChange={(e) => {
+              const next = Number(e.target.value) as LanguageId
+              if (!code.trim() || code === STARTERS[languageId]) setCode(STARTERS[next])
+              setLanguageId(next)
+            }}
             disabled={running}
-            className="h-9 rounded-lg border border-[#292725] bg-[#090807] px-3 text-sm text-white outline-none focus:border-[#A78BFA]"
+            className="h-9 rounded-lg border border-[#292725] bg-[#090807] px-3 text-sm text-white outline-none focus:border-[#A78BFA] focus-visible:ring-2 focus-visible:ring-[#A78BFA]"
           >
             {LANGUAGES.map((l) => (
               <option key={l.id} value={l.id}>
@@ -159,16 +164,16 @@ export default function RunVerifyPanel({ testCases }: Props) {
           rows={14}
           spellCheck={false}
           placeholder="Write your code here..."
-          className="w-full resize-y rounded-xl border border-[#292725] bg-[#090807] p-4 font-mono text-sm text-white outline-none focus:border-[#A78BFA] placeholder:text-[#55524F]"
+          className="w-full resize-y rounded-xl border border-[#292725] bg-[#090807] p-4 font-mono text-sm text-white outline-none focus:border-[#A78BFA] focus-visible:ring-2 focus-visible:ring-[#A78BFA] placeholder:text-[#55524F]"
         />
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <p className="text-xs text-[#73706D]">Runs up to {Math.min(testCases.length, 5)} tests. This can take a little while.</p>
+        <p className="text-xs text-[#8F8B87]">Runs up to {Math.min(testCases.length, 5)} tests. This can take a little while.</p>
         <button
           onClick={handleRun}
           disabled={running}
-          className="h-10 w-full whitespace-nowrap px-5 sm:w-auto rounded-lg bg-white text-[#090807] text-sm font-semibold hover:bg-[#E5E5E5] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-10 w-full whitespace-nowrap px-5 sm:w-auto rounded-lg bg-white text-[#090807] text-sm font-semibold hover:bg-[#E5E5E5] transition-all disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#11100F]"
         >
           {running ? 'Running tests…' : 'Run & Verify'}
         </button>

@@ -35,8 +35,8 @@ export default function ProfileForm({
   const router = useRouter()
   const [supabase] = useState(() => createClient())
 
-  const [savedName, setSavedName] = useState(initialName)
-  const [name, setName] = useState(initialName)
+  const [savedName, setSavedName] = useState(initialName || displayName || '')
+  const [name, setName] = useState(initialName || displayName || '')
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -61,7 +61,7 @@ export default function ProfileForm({
 
     setIsSaving(true)
 
-    // RLS only allows updating your own row, so a 0-row result means it was blocked
+    // RLS only allows updating your own row in profiles table
     const { data, error: updateError } = await supabase
       .from('profiles')
       .update({ full_name: cleanName })
@@ -77,76 +77,97 @@ export default function ProfileForm({
 
     setSavedName(data.full_name ?? cleanName)
     setName(data.full_name ?? cleanName)
-    setSuccess('Profile updated.')
+    setSuccess('Profile updated successfully.')
     setIsSaving(false)
 
-    // Re-run server components so the sidebar/top bar pick up the new name
+    // Re-run server components so the sidebar and top navigation pick up the new name
     router.refresh()
   }
 
   return (
     <div className="max-w-2xl space-y-6">
-      {/* Photo */}
-      <section className="rounded-2xl border border-[#292725] bg-[#11100F] p-6">
-        <h2 className="mb-4 text-lg font-semibold">Profile photo</h2>
+      {/* Profile Photo / Identity Card (Compact & Aligned) */}
+      <section className="rounded-2xl border border-[#292725] bg-[#11100F] p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl}
+                alt={displayName}
+                width={56}
+                height={56}
+                referrerPolicy="no-referrer"
+                className="h-14 w-14 shrink-0 rounded-full border border-[#292725] object-cover"
+              />
+            ) : (
+              <div
+                aria-hidden="true"
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#292725] bg-[#1A1816] text-lg font-semibold text-[#D0D0D0] shadow-inner"
+              >
+                {getInitials(cleanName || initialName || displayName)}
+              </div>
+            )}
 
-        <div className="flex items-center gap-5">
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarUrl}
-              alt={displayName}
-              width={80}
-              height={80}
-              referrerPolicy="no-referrer"
-              className="h-20 w-20 rounded-full border border-[#292725] object-cover"
-            />
-          ) : (
-            <div
-              aria-hidden="true"
-              className="flex h-20 w-20 items-center justify-center rounded-full border border-[#292725] bg-[#1A1816] text-2xl font-semibold text-[#D0D0D0]"
-            >
-              {getInitials(initialName || displayName)}
+            <div>
+              <h3 className="text-base font-semibold text-white">
+                {cleanName || displayName || 'Learner'}
+              </h3>
+              <p className="text-xs text-[#9A9692]">{email}</p>
+              <div className="mt-1 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                <span className="text-[11px] text-[#73706D]">Google OAuth Linked</span>
+              </div>
             </div>
-          )}
+          </div>
 
-          <p className="text-sm leading-6 text-[#9A9692]">
-            {avatarUrl
-              ? 'Your photo was imported from your Google account when you signed up.'
-              : 'You have no profile photo yet. Your initials are shown instead.'}
-          </p>
+          <div className="text-left sm:text-right">
+            <span className="inline-block rounded-md border border-[#292725] bg-[#141210] px-2.5 py-1 text-[11px] font-medium text-[#73706D]">
+              Avatar managed via Google
+            </span>
+          </div>
         </div>
       </section>
 
-      {/* Details */}
-      <section className="rounded-2xl border border-[#292725] bg-[#11100F] p-6">
-        <h2 className="mb-5 text-lg font-semibold">Personal details</h2>
+      {/* Personal Details Form */}
+      <section className="rounded-2xl border border-[#292725] bg-[#11100F] p-5 sm:p-6">
+        <h2 className="mb-5 text-base font-semibold text-white">Personal details</h2>
 
         <form onSubmit={handleSubmit} noValidate className="space-y-5">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#A5A19D]" htmlFor="fullName">
-              Full name
-            </label>
+          {/* Full Name */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium uppercase tracking-wider text-[#A5A19D]" htmlFor="fullName">
+                Full name
+              </label>
+              <span className="text-[11px] font-mono text-[#73706D]">
+                {name.length}/{MAX_NAME_LENGTH}
+              </span>
+            </div>
             <input
               id="fullName"
               name="fullName"
               type="text"
               autoComplete="name"
               value={name}
-              maxLength={MAX_NAME_LENGTH + 10}
+              maxLength={MAX_NAME_LENGTH + 5}
               onChange={(e) => {
                 setName(e.target.value)
                 if (error) setError('')
                 if (success) setSuccess('')
               }}
               placeholder="Your full name"
-              className="h-[52px] w-full rounded-xl border border-[#292929] bg-[#0D0D0C] px-4 text-[15px] text-white outline-none placeholder:text-[#73706D]/60 transition-all duration-200 hover:border-[#3A3A3A] focus:border-[#8B8F94] focus:ring-2 focus:ring-[#8B8F94]/10"
+              className="h-11 w-full rounded-xl border border-[#292929] bg-[#0D0D0C] px-4 text-sm text-white outline-none transition-all duration-200 placeholder:text-[#73706D]/60 hover:border-[#3A3A3A] focus:border-[#A78BFA] focus-visible:ring-2 focus-visible:ring-[#A78BFA]"
             />
+            <p className="text-[11px] text-[#73706D]">
+              Displayed in learning paths, submissions, and session bars.
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[#A5A19D]" htmlFor="email">
-              Email
+          {/* Email (Read-only) */}
+          <div className="space-y-1.5 pt-1">
+            <label className="text-xs font-medium uppercase tracking-wider text-[#A5A19D]" htmlFor="email">
+              Email address
             </label>
             <input
               id="email"
@@ -154,46 +175,59 @@ export default function ProfileForm({
               value={email}
               disabled
               readOnly
-              className="h-[52px] w-full cursor-not-allowed rounded-xl border border-[#292929] bg-[#0D0D0C] px-4 text-[15px] text-[#77736F] outline-none"
+              className="h-11 w-full cursor-not-allowed rounded-xl border border-[#242424] bg-[#0A0A0A] px-4 text-sm text-[#73706D] outline-none"
             />
-            <p className="text-xs text-[#73706D]">Your email can&apos;t be changed here.</p>
+            <p className="text-[11px] text-[#73706D]">
+              Your email is managed by your Google provider account and cannot be modified directly here.
+            </p>
           </div>
 
+          {/* Error Message */}
           {error && (
             <div
               role="alert"
-              className="rounded-lg border border-[#5A3434] bg-[#2A1717] px-3.5 py-3 text-sm leading-5 text-[#E7B8B8]"
+              className="flex items-center gap-2 rounded-lg border border-[#5A3434] bg-[#2A1717] px-3.5 py-2.5 text-xs text-[#E7B8B8]"
             >
-              {error}
+              <svg className="h-4 w-4 shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
             </div>
           )}
 
+          {/* Success Message */}
           {success && (
             <div
               role="status"
-              className="rounded-lg border border-[#27432F] bg-[#14231A] px-3.5 py-3 text-sm leading-5 text-[#9BE0B0]"
+              className="flex items-center gap-2 rounded-lg border border-[#27432F] bg-[#14231A] px-3.5 py-2.5 text-xs text-[#9BE0B0]"
             >
-              {success}
+              <svg className="h-4 w-4 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>{success}</span>
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={isSaving || !hasChanges}
-            className="flex h-11 items-center justify-center gap-2 rounded-xl bg-white px-6 text-[15px] font-semibold text-[#090909] outline-none transition-all duration-200 hover:bg-[#F1F1F1] focus-visible:ring-2 focus-visible:ring-[#8B8F94] focus-visible:ring-offset-2 focus-visible:ring-offset-[#11100F] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSaving ? (
-              <>
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle className="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" />
-                  <path className="opacity-90" d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                </svg>
-                <span>Saving...</span>
-              </>
-            ) : (
-              <span>Save changes</span>
-            )}
-          </button>
+          {/* Submit Button */}
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={isSaving || !hasChanges}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs font-semibold text-[#090909] outline-none transition-all duration-200 hover:bg-[#E5E5E5] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#11100F] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSaving ? (
+                <>
+                  <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" />
+                    <path className="opacity-90" d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                  </svg>
+                  <span>Saving changes…</span>
+                </>
+              ) : (
+                <span>Save changes</span>
+              )}
+            </button>
+          </div>
         </form>
       </section>
     </div>
