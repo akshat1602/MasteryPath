@@ -1,6 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import {
+  decideNextDifficulty,
+  type Difficulty,
+  type AdaptiveDecision,
+} from "@/lib/ai/adaptive-engine";
+import {
+  TOPICS,
+  getNextProblemType,
+} from "@/lib/ai/topic-registry";
+import type {
+  DSAPattern,
+  ProblemType,
+} from "@/lib/ai/problem-types";
 
 type Example = {
   input: string;
@@ -47,12 +60,16 @@ type JudgeSubmissionResult = {
   error?: string;
   results?: JudgeCaseResult[];
 };
-
-type Pattern = "Sliding Window" | "Two Pointers";
-
 export default function Home() {
-  const [pattern, setPattern] = useState<Pattern>("Two Pointers");
+  const [difficulty, setDifficulty] = useState<Difficulty>("Easy");
+const [attempts, setAttempts] = useState(0);
+const [adaptiveDecision, setAdaptiveDecision] =
+  useState<AdaptiveDecision | null>(null);
+  const [pattern, setPattern] = useState<DSAPattern>("Two Pointers");
+
   const [problem, setProblem] = useState<GeneratedProblem | null>(null);
+const [currentProblemType, setCurrentProblemType] =
+  useState<ProblemType | "">("");
   const [verification, setVerification] = useState<Verification | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -60,24 +77,36 @@ export default function Home() {
   const [sourceCode, setSourceCode] = useState("");
   const [languageId, setLanguageId] = useState<number>(100);
   const [submissionLoading, setSubmissionLoading] = useState(false);
+  const [showNextProblem, setShowNextProblem] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
   const [submissionResult, setSubmissionResult] =
     useState<JudgeSubmissionResult | null>(null);
 
-  async function generateProblem() {
+   async function generateProblem(
+  requestedDifficulty: Difficulty = difficulty
+  ) {
     setLoading(true);
     setError("");
     setProblem(null);
     setVerification(null);
+    setAttempts(0);
+setAdaptiveDecision(null);
     setSourceCode("");
     setSubmissionError("");
     setSubmissionResult(null);
+
 
     try {
       const response = await fetch("/api/generate-problem", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pattern }),
+        body: JSON.stringify({
+  pattern,
+  difficulty: requestedDifficulty,
+  ...(currentProblemType
+    ? { problemType: getNextProblemType(pattern, currentProblemType) }
+    : {}),
+}),
       });
 
       const data = await response.json();
@@ -89,8 +118,9 @@ export default function Home() {
             "Could not generate a problem. Please try again.",
         );
       }
-
+      console.log("Generated problem type:", data.problemType);
       setProblem(data.result);
+      setCurrentProblemType(data.problemType ?? "");
       setVerification(data.validation ?? null);
     } catch (err) {
       setError(
@@ -122,6 +152,7 @@ export default function Home() {
     setSubmissionLoading(true);
     setSubmissionError("");
     setSubmissionResult(null);
+    setAttempts((previous) => previous + 1);
 
     try {
       const response = await fetch("/api/judge0/submit", {
@@ -147,7 +178,30 @@ export default function Home() {
         );
       }
 
-      setSubmissionResult(data);
+
+setSubmissionResult(data);
+
+const verdict = data.verdict;
+if (
+  verdict === "ACCEPTED" ||
+  verdict === "WRONG_ANSWER"
+) {
+  const decision = decideNextDifficulty({
+    currentDifficulty: difficulty,
+    verdict,
+    accepted: data.accepted === true,
+    attempts: attempts + 1,
+    hintsUsed: 0,
+  });
+
+  setAdaptiveDecision(decision);
+  setDifficulty(decision.nextDifficulty);
+
+  if (data.accepted === true) {
+    setShowNextProblem(true);
+  }
+}
+
     } catch (err) {
       setSubmissionError(
         err instanceof Error
@@ -188,16 +242,19 @@ export default function Home() {
               id="pattern"
               value={pattern}
               onChange={(event) =>
-                setPattern(event.target.value as Pattern)
+                setPattern(event.target.value as DSAPattern)
               }
               className="min-h-12 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-4 text-slate-100 outline-none focus:border-cyan-400"
             >
-              <option value="Sliding Window">Sliding Window</option>
-              <option value="Two Pointers">Two Pointers</option>
+              {TOPICS.map((topic) => (
+  <option key={topic} value={topic}>
+    {topic}
+  </option>
+))}
             </select>
 
             <button
-              onClick={generateProblem}
+              onClick={() => generateProblem()}
               disabled={loading}
               className="min-h-12 rounded-lg bg-cyan-400 px-6 font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -206,9 +263,9 @@ export default function Home() {
           </div>
 
           <p className="mt-3 text-xs text-slate-500">
-            Currently supported: Sliding Window and Two Pointers, each with a
-            defined problem template.
-          </p>
+  9 DSA topics configured. Generation support for the newly added
+  topics will be integrated in the next phase.
+</p>
         </section>
 
         {loading && (
@@ -225,7 +282,7 @@ export default function Home() {
             <p className="font-semibold">Generation failed</p>
             <p className="mt-1 text-sm">{error}</p>
             <button
-              onClick={generateProblem}
+              onClick={() => generateProblem()}
               className="mt-3 rounded-lg border border-red-700 px-4 py-2 text-sm hover:bg-red-900"
             >
               Try again
@@ -427,7 +484,40 @@ export default function Home() {
                         </pre>
                       )}
                     </div>
-                  ))}
+                                    ))}
+
+                  {submissionResult.accepted && showNextProblem && (
+                    <div className="mt-5 rounded-xl border border-emerald-700 bg-emerald-950/40 p-4">
+                      <h4 className="font-semibold text-emerald-300">
+                        Great work! Problem solved 🎉
+                      </h4>
+
+                      <p className="mt-2 text-sm text-slate-200">
+                        Tests passed: {submissionResult.passedTests} /{" "}
+                        {submissionResult.totalTests}
+                      </p>
+
+                      <p className="mt-2 text-sm text-slate-300">
+                        Your next difficulty: {difficulty}
+                      </p>
+
+                      <p className="mt-2 text-sm text-slate-300">
+                        Ready to challenge yourself with another problem?
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowNextProblem(false);
+                          void generateProblem(difficulty);
+                        }}
+                        disabled={loading}
+                        className="mt-4 rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {loading ? "Generating..." : "Next Problem"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </section>

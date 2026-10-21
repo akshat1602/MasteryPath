@@ -22,5 +22,13 @@ Two Pointers pattern guidance:
 - Do not force this pattern if the original problem does not reasonably support it.
 - Preserve the original problem's core learning objective while creating a new problem.
 `;
+
+    default:
+      return `
+General DSA guidance:
+- Preserve the selected topic's core learning objective.
+- Do not force Sliding Window or Two Pointers techniques on another topic.
+- Use topic-specific guidance only when it has been defined and verified.
+`;
   }
 }
