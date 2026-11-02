@@ -2,15 +2,35 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import MasteryGraph from '@/components/MasteryGraph'
+import { useRouter } from 'next/navigation'
+import MasteryGraph, { type TopicNodeData } from '@/components/MasteryGraph'
 import SubmissionModal from '@/components/SubmissionModal'
+import { getTopicBySlug, getTopicByLabel } from '@/lib/topics'
 
 export default function PathsPage() {
+  const router = useRouter()
   const [selectedNode, setSelectedNode] = useState<{
     id: string | null
-    data: any | null
+    data: TopicNodeData | null
   }>({ id: null, data: null })
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const handleNodeSelect = (nodeId: string, nodeData: TopicNodeData) => {
+    // Match the clicked node to our practice topics: slug first, then label
+    const topic =
+      getTopicBySlug(String(nodeData?.slug ?? '')) ??
+      getTopicByLabel(String(nodeData?.label ?? ''))
+
+    if (topic) {
+      // Supported topics generate real problems; others show "Coming soon" on the practice page
+      router.push(`/practice/${topic.slug}`)
+      return
+    }
+
+    // Any other node keeps the checkpoint modal
+    setSelectedNode({ id: nodeId, data: nodeData })
+    setIsModalOpen(true)
+  }
 
   return (
     <div className="min-h-screen bg-[#070706] text-white selection:bg-[#A78BFA]/30 pb-20">
@@ -28,16 +48,16 @@ export default function PathsPage() {
               </span>
             </div>
             <p className="mt-1 text-xs text-[#9A9692] sm:text-sm">
-              Explore structural prerequisite chains. Click any node to open its checkpoint rubric or jump to practice.
+              Explore structural prerequisite chains. Click a topic to open its practice workspace.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/practice/two-pointers"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs font-semibold text-[#090807] transition-all hover:bg-[#E5E5E5] hover:shadow-[0_0_20px_rgba(255,255,255,0.15)]"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs font-semibold text-[#090807] transition-all hover:bg-[#E5E5E5] hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#070706]"
             >
-              <span>Practice Active Topic</span>
+              <span>Practice Two Pointers</span>
               <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
@@ -45,8 +65,13 @@ export default function PathsPage() {
           </div>
         </header>
 
+        {/* --- Demo data notice for the summary cards --- */}
+        <div role="note" className="rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-[13px] text-amber-200">
+          <span className="font-semibold">Demo data.</span> The four summary cards below are sample values, not your real mastery. They will be connected once progress tracking is agreed.
+        </div>
+
         {/* --- Top Metrics Summary Strip --- */}
-        <section aria-label="Graph metrics" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section aria-label="Graph metrics (demo data)" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             {
               title: 'Total Core Topics',
@@ -101,7 +126,10 @@ export default function PathsPage() {
                   {item.badge}
                 </span>
               </div>
-              <p className="relative z-10 mt-3 text-[11px] text-[#73706D]">{item.sub}</p>
+              <p className="relative z-10 mt-3 text-[11px] text-[#8F8B87]">{item.sub}</p>
+              <span className="relative z-10 mt-3 inline-block rounded-full border border-amber-500/30 bg-amber-950/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300">
+                Demo data
+              </span>
             </div>
           ))}
         </section>
@@ -111,9 +139,9 @@ export default function PathsPage() {
           {/* Graph Toolbar Bar */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#242220] bg-[#141210] px-6 py-3.5">
             <div className="flex items-center gap-3">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
               <span className="text-xs font-semibold uppercase tracking-wider text-white">
-                Live Knowledge Graph Canvas
+                Knowledge Graph Canvas
               </span>
             </div>
 
@@ -140,12 +168,12 @@ export default function PathsPage() {
 
           {/* Interactive Canvas Viewport */}
           <div className="h-[620px] w-full bg-[radial-gradient(#1e1c1a_1px,transparent_1px)] [background-size:18px_18px]">
-            <MasteryGraph />
+            <MasteryGraph onNodeSelect={handleNodeSelect} />
           </div>
 
           {/* Canvas Bottom Instructions */}
-          <div className="flex flex-col sm:flex-row items-center justify-between border-t border-[#242220] bg-[#11100F] px-6 py-3 text-xs text-[#73706D]">
-            <span>Click any topic node to open its checkpoint assessment modal or launch its practice workspace.</span>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-[#242220] bg-[#11100F] px-6 py-3 text-xs text-[#8F8B87]">
+            <span>Click a topic node to open its practice workspace.</span>
             <span className="font-mono text-[#A78BFA]">Controls: Scroll to zoom · Drag to pan</span>
           </div>
         </div>
