@@ -1,58 +1,135 @@
 'use client'
 
-import React from 'react'
-import { Handle, Position, NodeProps } from '@xyflow/react'
+import React, { memo } from 'react'
+import { useRouter } from 'next/navigation'
+import { Handle, Position, type NodeProps } from '@xyflow/react'
 
 export interface TopicNodeData {
-  label: string;
-  category?: string;
-  isMastered?: boolean;
-  isDecaying?: boolean;
-  transferGap?: number;
-  validatorConfidence?: number;
-  [key: string]: unknown;
+  label: string
+  category?: string
+  status?: 'mastered' | 'ready' | 'decaying' | 'pending'
+  retention?: number
+  transferGap?: number
+  slug?: string
+  [key: string]: unknown
 }
 
-export default function TopicNode({ data }: NodeProps) {
-  const nodeData = data as unknown as TopicNodeData;
-  const { label, category, isMastered, isDecaying, transferGap } = nodeData;
+function TopicNode({ data, selected }: NodeProps) {
+  const router = useRouter()
+  const nodeData = data as unknown as TopicNodeData
+  const status = nodeData.status ?? 'ready'
 
-  // Determine conditional Tailwind border and glow styling
-  let borderStyle = 'border-[#292725] bg-[#11100F] text-white'
-  let glowStyle = ''
+  // Map label to slug if slug is missing
+  const topicSlug =
+    nodeData.slug ||
+    nodeData.label
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
 
-  if (isMastered) {
-    borderStyle = 'border-emerald-500/60 bg-[#0F1F17] text-white'
-    glowStyle = 'shadow-[0_0_25px_rgba(52,211,153,0.25)]'
-  } else if (isDecaying) {
-    borderStyle = 'border-red-500/60 bg-[#1F1212] text-white animate-pulse'
-    glowStyle = 'shadow-[0_0_25px_rgba(239,68,68,0.25)]'
+  const statusConfig = {
+    mastered: {
+      border: 'border-emerald-500/40 hover:border-emerald-400',
+      badge: 'border-emerald-500/30 bg-emerald-950/40 text-emerald-300',
+      glow: 'from-emerald-500/15 via-emerald-500/5 to-transparent',
+      dot: 'bg-emerald-400',
+      accentText: 'text-emerald-400',
+      label: 'Mastered',
+      clickable: true,
+    },
+    decaying: {
+      border: 'border-red-500/40 hover:border-red-400',
+      badge: 'border-red-500/30 bg-red-950/40 text-red-300',
+      glow: 'from-red-500/15 via-red-500/5 to-transparent',
+      dot: 'bg-red-400 animate-pulse',
+      accentText: 'text-red-400',
+      label: 'Decaying (Review)',
+      clickable: true,
+    },
+    ready: {
+      border: 'border-orange-500/40 hover:border-orange-400',
+      badge: 'border-orange-500/30 bg-orange-950/40 text-orange-300',
+      glow: 'from-orange-500/20 via-orange-500/5 to-transparent',
+      dot: 'bg-orange-400',
+      accentText: 'text-orange-400',
+      label: 'Active',
+      clickable: true,
+    },
+    pending: {
+      border: 'border-[#292725] hover:border-[#3D3A37]',
+      badge: 'border-[#333] bg-[#141210] text-[#73706D]',
+      glow: 'from-white/[0.02] to-transparent',
+      dot: 'bg-[#555]',
+      accentText: 'text-[#73706D]',
+      label: 'Prerequisite Locked',
+      clickable: false,
+    },
+  }[status]
+
+  const handleOpenPractice = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (statusConfig.clickable) {
+      router.push(`/practice/${topicSlug}`)
+    }
   }
 
   return (
-    <div className={`relative rounded-xl border p-4 transition-all duration-300 w-64 ${borderStyle} ${glowStyle}`}>
-      {/* Target handle for incoming prerequisite edges */}
-      <Handle type="target" position={Position.Top} className="!bg-[#77736F] !w-2.5 !h-2.5 !-top-1.5" />
+    <div
+      onClick={handleOpenPractice}
+      className={`group relative min-w-[230px] rounded-2xl border bg-[#0E0D0C] p-4 text-left shadow-xl transition-all duration-300 cursor-pointer ${
+        statusConfig.border
+      } ${selected ? 'ring-2 ring-orange-400 ring-offset-2 ring-offset-[#070706]' : ''}`}
+    >
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="!h-2.5 !w-2.5 !border-2 !border-[#0E0D0C] !bg-[#73706D] transition-colors group-hover:!bg-orange-400"
+      />
 
-      <div className="flex flex-col gap-1.5">
-        {category && (
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9A9692]">
-            {category}
+      {/* Top Ambient Orange Glow */}
+      <div
+        className={`pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-2xl bg-gradient-to-b ${statusConfig.glow} opacity-70 transition-opacity group-hover:opacity-100`}
+      />
+
+      <div className="relative z-10 space-y-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#73706D]">
+            {nodeData.category ?? 'Algorithm Pattern'}
           </span>
-        )}
-        <h3 className="font-bold text-sm tracking-tight">{label}</h3>
+          <span
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-mono font-medium ${statusConfig.badge}`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${statusConfig.dot}`} />
+            {statusConfig.label}
+          </span>
+        </div>
 
-        {/* Optional Transfer Gap metric badge if provided */}
-        {transferGap !== undefined && (
-          <div className="mt-2 flex items-center justify-between text-[11px] pt-2 border-t border-white/10 text-[#A5A19D]">
-            <span>Transfer Gap:</span>
-            <span className="font-mono font-semibold text-white">{transferGap}%</span>
-          </div>
-        )}
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-bold tracking-tight text-white group-hover:text-orange-300 transition-colors">
+            {nodeData.label}
+          </h3>
+          <span className="text-xs text-[#9A9692] group-hover:text-white transition-colors">
+            →
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-[#1C1A18] text-[10px] text-[#9A9692]">
+          <span>
+            Retention: <strong className="font-mono text-white">{nodeData.retention ?? 70}%</strong>
+          </span>
+          <span className="font-medium text-orange-400 underline underline-offset-2">
+            Practice
+          </span>
+        </div>
       </div>
 
-      {/* Source handle for outgoing edges */}
-      <Handle type="source" position={Position.Bottom} className="!bg-[#77736F] !w-2.5 !h-2.5 !-bottom-1.5" />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!h-2.5 !w-2.5 !border-2 !border-[#0E0D0C] !bg-[#73706D] transition-colors group-hover:!bg-orange-400"
+      />
     </div>
   )
 }
+
+export default memo(TopicNode)
