@@ -1,16 +1,60 @@
 
-import type { GeneratedProblem } from "./problem-types";
+import type { GeneratedProblem, ProblemType } from "./problem-types";
 import { verifyLongestSubarrayCase } from "./verify-two-pointers";
 import { verifyClosePairsCase } from "./verify-close-pairs";
-
-export type VerificationStrategy =
-  | "longest-subarray-target-sum"
-  | "count-close-pairs"
-  | "none";
+import { verifyWindowVariantCase } from "./verify-window-variants";
+import {
+  verifySecondLargestCase,
+  verifyRotateArrayCase,
+  verifyMaximumSubarraySumCase,
+} from "./verify-array-variants";
+import {
+  verifyTwoSumSortedCase,
+  verifyRemoveDuplicatesSortedCase,
+} from "./verify-two-pointer-variants";
+import {
+  verifyReverseLinkedListCase,
+  verifyMiddleLinkedListCase,
+  verifyLinkedListCycleCase,
+} from "./verify-linked-list-variants";
+import {
+  verifyValidParenthesesCase,
+  verifyNextGreaterElementCase,
+  verifyMinStackCase,
+} from "./verify-stack-variants";
+import {
+  verifyPalindromeCheckCase,
+  verifyAnagramCheckCase,
+  verifyLongestCommonPrefixCase,
+} from "./verify-string-variants";
+import {
+  verifyBinarySearchTargetCase,
+  verifyFirstOccurrenceCase,
+  verifyLowerBoundCase,
+} from "./verify-searching-variants";
+import {
+  verifyBubbleSortCase,
+  verifySelectionSortCase,
+  verifyMergeSortedArraysCase,
+  verifySortColorsCase,
+  verifyMergeSortCase,
+} from "./verify-sorting-variants";
+import {
+  verifyRangeSumQueryCase,
+  verifyEquilibriumIndexCase,
+  verifyRangeUpdateQueriesCase,
+} from "./verify-prefix-sum-variants";
 
 export interface ProblemValidationResult {
   valid: boolean;
   errors: string[];
+}
+
+type VerificationStrategy = ProblemType | "none";
+
+interface VerificationResult {
+  valid: boolean;
+  message?: string;
 }
 
 export function validateGeneratedProblem(
@@ -19,7 +63,6 @@ export function validateGeneratedProblem(
 ): ProblemValidationResult {
   const errors: string[] = [];
 
-  // Check that the generated result is an object.
   if (
     !problem ||
     typeof problem !== "object" ||
@@ -31,7 +74,6 @@ export function validateGeneratedProblem(
     };
   }
 
-  // Validate required text fields.
   if (typeof problem.title !== "string" || !problem.title.trim()) {
     errors.push("Problem title is empty or invalid.");
   }
@@ -43,15 +85,11 @@ export function validateGeneratedProblem(
     errors.push("Problem statement is empty or invalid.");
   }
 
-  if (!Array.isArray(problem.constraints)) {
-    errors.push("Constraints must be an array.");
+  if (!Array.isArray(problem.constraints) || problem.constraints.length === 0) {
+    errors.push("At least one constraint is required.");
   } else {
-    if (problem.constraints.length === 0) {
-      errors.push("At least one constraint is required.");
-    }
-
-    problem.constraints.forEach((constraint, index) => {
-      if (typeof constraint !== "string" || !constraint.trim()) {
+    problem.constraints.forEach((item, index) => {
+      if (typeof item !== "string" || !item.trim()) {
         errors.push(`Constraint ${index + 1} is empty or invalid.`);
       }
     });
@@ -79,7 +117,6 @@ export function validateGeneratedProblem(
     errors.push("Expected approach is missing or invalid.");
   }
 
-  // Stop before accessing array elements if the structure is invalid.
   if (
     !Array.isArray(problem.examples) ||
     !Array.isArray(problem.testCases) ||
@@ -100,163 +137,178 @@ export function validateGeneratedProblem(
     errors.push("At least three test cases are required.");
   }
 
-  // Validate individual examples.
   problem.examples.forEach((example, index) => {
     if (
       !example ||
       typeof example !== "object" ||
-      Array.isArray(example)
-    ) {
-      errors.push(`Example ${index + 1} must be an object.`);
-      return;
-    }
-
-    if (
       typeof example.input !== "string" ||
-      !example.input.trim()
-    ) {
-      errors.push(`Example ${index + 1} has empty or invalid input.`);
-    }
-
-    if (
+      !example.input.trim() ||
       typeof example.output !== "string" ||
-      !example.output.trim()
-    ) {
-      errors.push(`Example ${index + 1} has empty or invalid output.`);
-    }
-
-    if (
+      !example.output.trim() ||
       typeof example.explanation !== "string" ||
       !example.explanation.trim()
     ) {
-      errors.push(`Example ${index + 1} has no valid explanation.`);
+      errors.push(`Example ${index + 1} is invalid.`);
     }
   });
 
-  // Validate individual test cases.
   problem.testCases.forEach((testCase, index) => {
     if (
       !testCase ||
       typeof testCase !== "object" ||
-      Array.isArray(testCase)
-    ) {
-      errors.push(`Test case ${index + 1} must be an object.`);
-      return;
-    }
-
-    if (
       typeof testCase.input !== "string" ||
-      !testCase.input.trim()
-    ) {
-      errors.push(`Test case ${index + 1} has empty or invalid input.`);
-    }
-
-    if (
+      !testCase.input.trim() ||
       typeof testCase.expectedOutput !== "string" ||
       !testCase.expectedOutput.trim()
     ) {
-      errors.push(
-        `Test case ${index + 1} has empty or invalid expected output.`,
-      );
+      errors.push(`Test case ${index + 1} is invalid.`);
     }
   });
 
-  // Verify Sliding Window outputs against the trusted reference algorithm.
-  if (strategy === "longest-subarray-target-sum") {
-    problem.examples.forEach((example, index) => {
-      if (
-        !example ||
-        typeof example !== "object" ||
-        typeof example.input !== "string" ||
-        typeof example.output !== "string" ||
-        !example.input.trim() ||
-        !example.output.trim()
-      ) {
-        return;
+  if (strategy === "none") {
+    errors.push("A trusted verification strategy must be selected.");
+    return { valid: false, errors };
+  }
+
+  function verify(input: string, output: string): VerificationResult {
+    switch (strategy) {
+      case "longest-subarray-target-sum":
+        return verifyLongestSubarrayCase(input, output);
+
+      case "count-close-pairs":
+        return verifyClosePairsCase(input, output);
+
+      case "maximum-fixed-window-sum":
+        return verifyWindowVariantCase(input, output, "maximum-sum");
+
+      case "minimum-fixed-window-average":
+        return verifyWindowVariantCase(input, output, "minimum-average");
+
+      case "two-sum-sorted":
+        return verifyTwoSumSortedCase(input, output);
+
+      case "remove-duplicates-sorted":
+        return verifyRemoveDuplicatesSortedCase(input, output);
+
+      case "second-largest-element":
+        return verifySecondLargestCase(input, output);
+
+      case "rotate-array":
+        return verifyRotateArrayCase(input, output);
+
+      case "maximum-subarray-sum":
+        return verifyMaximumSubarraySumCase(input, output);
+
+      case "reverse-linked-list":
+        return verifyReverseLinkedListCase(input, output);
+
+      case "middle-linked-list":
+        return verifyMiddleLinkedListCase(input, output);
+
+      case "detect-linked-list-cycle":
+        return verifyLinkedListCycleCase(input, output);
+
+      case "valid-parentheses":
+        return verifyValidParenthesesCase(input, output);
+
+      case "next-greater-element":
+        return verifyNextGreaterElementCase(input, output);
+
+      case "min-stack":
+        return verifyMinStackCase(input, output);
+
+      case "palindrome-check":
+        return verifyPalindromeCheckCase(input, output);
+
+      case "anagram-check":
+        return verifyAnagramCheckCase(input, output);
+
+      case "longest-common-prefix":
+        return verifyLongestCommonPrefixCase(input, output);
+
+      case "binary-search-target":
+        return verifyBinarySearchTargetCase(input, output);
+
+      case "first-occurrence":
+        return verifyFirstOccurrenceCase(input, output);
+
+      case "lower-bound":
+        return verifyLowerBoundCase(input, output);
+
+      case "bubble-sort":
+        return verifyBubbleSortCase(input, output);
+
+      case "selection-sort":
+        return verifySelectionSortCase(input, output);
+
+      case "merge-sorted-arrays":
+        return verifyMergeSortedArraysCase(input, output);
+
+      case "sort-colors":
+        return verifySortColorsCase(input, output);
+
+      case "merge-sort":
+        return verifyMergeSortCase(input, output);
+
+      case "range-sum-query": {
+        const valid = verifyRangeSumQueryCase(input, output);
+        return {
+          valid,
+          message: valid ? "" : "Invalid range-sum query input or output.",
+        };
       }
 
-      const result = verifyLongestSubarrayCase(
-        example.input,
-        example.output,
-      );
+      case "equilibrium-index": {
+        const valid = verifyEquilibriumIndexCase(input, output);
+        return {
+          valid,
+          message: valid ? "" : "Invalid equilibrium-index input or output.",
+        };
+      }
+
+      case "range-update-queries": {
+        const valid = verifyRangeUpdateQueriesCase(input, output);
+        return {
+          valid,
+          message: valid ? "" : "Invalid range-update queries input or output.",
+        };
+      }
+
+      default:
+        return {
+          valid: false,
+          message: "Unsupported verification strategy.",
+        };
+    }
+  }
+
+  problem.examples.forEach((example, index) => {
+    if (
+      example &&
+      typeof example.input === "string" &&
+      typeof example.output === "string"
+    ) {
+      const result = verify(example.input, example.output);
 
       if (!result.valid) {
         errors.push(`Example ${index + 1}: ${result.message}`);
       }
-    });
+    }
+  });
 
-    problem.testCases.forEach((testCase, index) => {
-      if (
-        !testCase ||
-        typeof testCase !== "object" ||
-        typeof testCase.input !== "string" ||
-        typeof testCase.expectedOutput !== "string" ||
-        !testCase.input.trim() ||
-        !testCase.expectedOutput.trim()
-      ) {
-        return;
-      }
-
-      const result = verifyLongestSubarrayCase(
-        testCase.input,
-        testCase.expectedOutput,
-      );
+  problem.testCases.forEach((testCase, index) => {
+    if (
+      testCase &&
+      typeof testCase.input === "string" &&
+      typeof testCase.expectedOutput === "string"
+    ) {
+      const result = verify(testCase.input, testCase.expectedOutput);
 
       if (!result.valid) {
         errors.push(`Test case ${index + 1}: ${result.message}`);
       }
-    });
-  }
+    }
+  });
 
-  // Verify Two Pointers / Count Close Pairs outputs.
-  if (strategy === "count-close-pairs") {
-    problem.examples.forEach((example, index) => {
-      if (
-        !example ||
-        typeof example !== "object" ||
-        typeof example.input !== "string" ||
-        typeof example.output !== "string" ||
-        !example.input.trim() ||
-        !example.output.trim()
-      ) {
-        return;
-      }
-
-      const result = verifyClosePairsCase(
-        example.input,
-        example.output,
-      );
-
-      if (!result.valid) {
-        errors.push(`Example ${index + 1}: ${result.message}`);
-      }
-    });
-
-    problem.testCases.forEach((testCase, index) => {
-      if (
-        !testCase ||
-        typeof testCase !== "object" ||
-        typeof testCase.input !== "string" ||
-        typeof testCase.expectedOutput !== "string" ||
-        !testCase.input.trim() ||
-        !testCase.expectedOutput.trim()
-      ) {
-        return;
-      }
-
-      const result = verifyClosePairsCase(
-        testCase.input,
-        testCase.expectedOutput,
-      );
-
-      if (!result.valid) {
-        errors.push(`Test case ${index + 1}: ${result.message}`);
-      }
-    });
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
+  return { valid: errors.length === 0, errors };
 }

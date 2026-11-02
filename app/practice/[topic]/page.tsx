@@ -4,10 +4,21 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { generateProblem } from '@/lib/services/problemService'
-import type { GeneratedProblem } from '@/lib/ai/problem-types'
-import { TOPICS, getTopicBySlug } from '@/lib/topics'
+import type { Difficulty, GeneratedProblem, ProblemType } from '@/lib/ai/problem-types'
+import { TOPICS, getTopicBySlug, getTestedTypes } from '@/lib/topics'
 import RunVerifyPanel from '@/components/RunVerifyPanel'
 import CopyButton from '@/components/CopyButton'
+
+// Starting level from the project brief. Adapting it later is Anshika's logic, not the UI's.
+const DEFAULT_DIFFICULTY: Difficulty = 'Medium'
+
+// Rotate through tested types so the same one is not served twice in a row when alternatives exist
+function pickNextType(tested: ProblemType[], last: ProblemType | null): ProblemType | undefined {
+  if (tested.length === 0) return undefined
+  if (!last) return tested[0]
+  const i = tested.indexOf(last)
+  return tested[(i + 1) % tested.length]
+}
 
 export default function PracticeTopicPage() {
   const params = useParams<{ topic: string }>()
@@ -19,16 +30,23 @@ export default function PracticeTopicPage() {
   const [problem, setProblem] = useState<GeneratedProblem | null>(null)
   const [referenceVerified, setReferenceVerified] = useState(false)
   const [problemId, setProblemId] = useState(0)
+  const [currentType, setCurrentType] = useState<ProblemType | null>(null)
 
   const handleGenerate = async () => {
     if (!topic?.pattern) return
     setLoading(true)
     setError(null)
     try {
-      const res = await generateProblem(topic.pattern)
+      const requestedType = pickNextType(getTestedTypes(topic), currentType)
+      const res = await generateProblem(topic.pattern, {
+        difficulty: DEFAULT_DIFFICULTY,
+        problemType: requestedType,
+        previousProblemType: currentType ?? undefined,
+      })
       setProblem(res.result)
       setProblemId((n) => n + 1)
       setReferenceVerified(res.validation.referenceVerified)
+      setCurrentType(res.problemType ?? requestedType ?? null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong while generating the problem.')
     } finally {
@@ -68,9 +86,10 @@ export default function PracticeTopicPage() {
           {backLink}
           {/* Dropdown to switch to ready topics */}
           <select
+            aria-label="Switch topic"
             value={topic.slug}
             onChange={(e) => handleTopicChange(e.target.value)}
-            className="h-9 rounded-lg border border-[#292725] bg-[#11100F] px-3 text-xs text-white outline-none focus:border-[#A78BFA]"
+            className="h-9 rounded-lg border border-[#292725] bg-[#11100F] px-3 text-xs text-white outline-none focus:border-[#A78BFA] focus-visible:ring-2 focus-visible:ring-[#A78BFA]"
           >
             {TOPICS.map((t) => (
               <option key={t.slug} value={t.slug} disabled={t.status === 'pending'}>
@@ -91,13 +110,13 @@ export default function PracticeTopicPage() {
           {/* Sub-problem status list */}
           {topic.problems.length > 0 && (
             <div className="pt-6 border-t border-[#292725] max-w-md mx-auto text-left">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#73706D] mb-3">Planned Problem Types</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#8F8B87] mb-3">Planned Problem Types</h3>
               <ul className="space-y-2 text-xs">
                 {topic.problems.map((p) => (
                   <li key={p.id} className="flex items-center justify-between p-2.5 rounded-lg border border-[#242424] bg-[#141210]">
                     <span className="text-[#D0D0D0]">{p.title}</span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-mono ${
-                      p.status === 'tested' ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/30' : 'bg-[#1F1F1F] text-[#73706D]'
+                      p.status === 'tested' ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/30' : 'bg-[#1F1F1F] text-[#8F8B87]'
                     }`}>
                       {p.status === 'tested' ? 'Tested' : 'Pending'}
                     </span>
@@ -122,7 +141,7 @@ export default function PracticeTopicPage() {
             id="topic-selector"
             value={topic.slug}
             onChange={(e) => handleTopicChange(e.target.value)}
-            className="h-9 rounded-lg border border-[#292725] bg-[#11100F] px-3 text-xs font-medium text-white outline-none focus:border-[#A78BFA]"
+            className="h-9 rounded-lg border border-[#292725] bg-[#11100F] px-3 text-xs font-medium text-white outline-none focus:border-[#A78BFA] focus-visible:ring-2 focus-visible:ring-[#A78BFA]"
           >
             {TOPICS.map((t) => (
               <option key={t.slug} value={t.slug} disabled={t.status === 'pending'}>
@@ -132,6 +151,9 @@ export default function PracticeTopicPage() {
           </select>
           <span className="rounded-full bg-[#1A1816] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#A78BFA] border border-[#292725]">
             {topic.category}
+          </span>
+          <span className="rounded-full bg-[#1A1816] px-3 py-1 text-xs text-[#9A9692] border border-[#292725]">
+            Requested: {DEFAULT_DIFFICULTY}
           </span>
         </div>
       </div>
@@ -145,7 +167,7 @@ export default function PracticeTopicPage() {
         <button
           onClick={handleGenerate}
           disabled={loading}
-          className="h-10 w-full whitespace-nowrap px-5 sm:w-auto rounded-lg bg-white text-[#090807] text-sm font-semibold hover:bg-[#E5E5E5] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-10 w-full whitespace-nowrap px-5 sm:w-auto rounded-lg bg-white text-[#090807] text-sm font-semibold hover:bg-[#E5E5E5] transition-all disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#090807]"
         >
           {loading ? 'Generating… (up to a minute)' : problem ? 'Generate New Problem' : 'Generate Problem'}
         </button>
@@ -155,7 +177,7 @@ export default function PracticeTopicPage() {
       {topic.problems.length > 0 && (
         <div className="mb-8 rounded-xl border border-[#242220] bg-[#11100F] p-4">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#73706D]">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#8F8B87]">
               Topic Problem Variants & Validation Status
             </h3>
             <span className="text-[11px] text-[#A78BFA] font-mono">Module 3 Scope</span>
@@ -164,7 +186,9 @@ export default function PracticeTopicPage() {
             {topic.problems.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center gap-2 rounded-lg border border-[#292725] bg-[#141210] px-3 py-1.5 text-xs"
+                className={`flex items-center gap-2 rounded-lg border bg-[#141210] px-3 py-1.5 text-xs ${
+                  p.id === currentType ? 'border-[#A78BFA] ring-1 ring-[#A78BFA]' : 'border-[#292725]'
+                }`}
               >
                 <span className="text-[#D0D0D0] font-medium">{p.title}</span>
                 <span className={`rounded-full px-2 py-0.5 text-[10px] uppercase font-mono ${
@@ -174,6 +198,7 @@ export default function PracticeTopicPage() {
                 }`}>
                   {p.status === 'tested' ? '✓ Tested' : 'Pending'}
                 </span>
+                {p.id === currentType && <span className="text-[10px] font-mono text-[#A78BFA]">Current</span>}
               </div>
             ))}
           </div>
@@ -181,7 +206,7 @@ export default function PracticeTopicPage() {
       )}
 
       {loading && !problem && (
-        <div className="rounded-2xl border border-[#292725] bg-[#11100F] p-12 text-center space-y-4">
+        <div role="status" aria-live="polite" className="rounded-2xl border border-[#292725] bg-[#11100F] p-12 text-center space-y-4">
           <div className="mx-auto h-8 w-8 rounded-full border-2 border-white border-t-transparent animate-spin" />
           <p className="text-sm text-[#9A9692]">Generating and verifying your problem…</p>
         </div>
@@ -194,13 +219,13 @@ export default function PracticeTopicPage() {
       )}
 
       {error && (
-        <div className="rounded-2xl border border-red-900/40 bg-red-950/20 p-6 text-center space-y-4 mb-6">
+        <div role="alert" className="rounded-2xl border border-red-900/40 bg-red-950/20 p-6 text-center space-y-4 mb-6">
           <h3 className="text-lg font-semibold text-red-400">Generation failed</h3>
           <p className="text-sm text-[#9A9692] max-w-md mx-auto">{error}</p>
           <button
             onClick={handleGenerate}
             disabled={loading}
-            className="h-9 px-4 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+            className="h-9 px-4 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             Try again
           </button>
@@ -236,7 +261,7 @@ export default function PracticeTopicPage() {
             <h3 className="text-lg font-semibold">Examples</h3>
             {problem.examples.map((ex, i) => (
               <div key={i} className="rounded-xl border border-[#292725] bg-[#11100F] p-6 space-y-3 font-mono text-sm">
-                <div className="text-xs uppercase tracking-wider text-[#73706D] font-sans font-semibold">Example {i + 1}</div>
+                <div className="text-xs uppercase tracking-wider text-[#8F8B87] font-sans font-semibold">Example {i + 1}</div>
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-[#9A9692]">Input:</span>

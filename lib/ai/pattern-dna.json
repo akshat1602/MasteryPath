@@ -63,5 +63,40 @@
       "Ensure examples and expected outputs agree with the problem statement.",
       "Do not invent a problem that only appears to use Two Pointers but actually requires a different core technique."
     ]
+  },
+  "Arrays": {
+    "patternName": "Arrays",
+    "coreIdea": "Process array elements using indexing, traversal, comparisons, and carefully maintained values.",
+    "invariants": [
+      "Every array access stays within valid index bounds.",
+      "The algorithm preserves the required relationship between elements.",
+      "The result remains consistent with the elements processed so far."
+    ],
+    "commonForms": [
+      "Single-pass traversal",
+      "Tracking minimum or maximum values",
+      "In-place array modification",
+      "Maintaining a running sum"
+    ],
+    "suitableProblemCharacteristics": [
+      "The problem involves accessing or processing elements in an array.",
+      "The answer can be derived through traversal, comparisons, or array operations.",
+      "The expected input and output can be expressed unambiguously."
+    ],
+    "commonMistakes": [
+      "Accessing an invalid index",
+      "Failing on empty or single-element arrays when those inputs are allowed",
+      "Incorrectly handling duplicate values",
+      "Changing the input array when the problem requires preserving it",
+      "Ignoring integer bounds or overflow assumptions"
+    ],
+    "generationRules": [
+      "Use array-specific reasoning appropriate to the selected problem type.",
+      "Specify whether the array is sorted and whether modification is allowed.",
+      "Define duplicate handling and edge cases explicitly.",
+      "Provide clear input formats, constraints, and output formats.",
+      "Ensure examples and expected outputs agree with the problem statement.",
+      "Do not force Sliding Window or Two Pointers when another array technique is more appropriate."
+    ]
   }
 }

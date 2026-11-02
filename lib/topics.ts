@@ -11,7 +11,7 @@ export interface ProblemVariant {
 export type TopicConfig = {
   slug: string
   label: string
-  pattern: DSAPattern | null // null = backend generation endpoint not supported yet
+  pattern: DSAPattern | null // null = coming soon
   category: string
   status: 'ready' | 'pending'
   problems: ProblemVariant[]
@@ -23,7 +23,7 @@ export const TOPICS: TopicConfig[] = [
     label: 'Two Pointers',
     pattern: 'Two Pointers',
     category: 'Array / Two Pointers',
-    status: 'ready', // Fully tested and working
+    status: 'ready',
     problems: [
       { id: 'count-close-pairs', title: 'Count Close Pairs', status: 'tested' },
       { id: 'two-sum-sorted', title: 'Two Sum in a Sorted Array', status: 'pending' },
@@ -31,23 +31,11 @@ export const TOPICS: TopicConfig[] = [
     ],
   },
   {
-    slug: 'sliding-window',
-    label: 'Sliding Window',
-    pattern: 'Sliding Window',
-    category: 'Subarrays & Substrings',
-    status: 'ready', // Enabled: generation & runner work
-    problems: [
-      { id: 'longest-subarray-target-sum', title: 'Longest Subarray with Target Sum', status: 'tested' },
-      { id: 'maximum-fixed-window-sum', title: 'Maximum Sum of a Fixed-Size Window', status: 'pending' },
-      { id: 'minimum-fixed-window-average', title: 'Minimum Average of a Fixed-Size Window', status: 'pending' },
-    ],
-  },
-  {
     slug: 'arrays',
     label: 'Arrays',
-    pattern: null, // Keep null until teammate connects and pushes backend array generator
+    pattern: 'Arrays',
     category: 'Fundamentals',
-    status: 'pending',
+    status: 'ready',
     problems: [
       { id: 'second-largest-element', title: 'Find the Second-Largest Element', status: 'tested' },
       { id: 'rotate-array', title: 'Rotate Array', status: 'tested' },
@@ -55,26 +43,22 @@ export const TOPICS: TopicConfig[] = [
     ],
   },
   {
+    slug: 'sliding-window',
+    label: 'Sliding Window',
+    pattern: 'Sliding Window',
+    category: 'Subarrays & Substrings',
+    status: 'ready',
+    problems: [
+      { id: 'longest-subarray-target-sum', title: 'Longest Subarray with Target Sum', status: 'tested' },
+      { id: 'maximum-fixed-window-sum', title: 'Maximum Sum of a Fixed-Size Window', status: 'pending' },
+      { id: 'minimum-fixed-window-average', title: 'Minimum Average of a Fixed-Size Window', status: 'pending' },
+    ],
+  },
+  {
     slug: 'binary-search',
     label: 'Binary Search',
-    pattern: null, // Backend not available yet
-    category: 'Searching / Binary Search',
-    status: 'pending',
-    problems: [],
-  },
-  {
-    slug: 'linked-lists',
-    label: 'Linked Lists',
-    pattern: null,
-    category: 'Linear Data Structures',
-    status: 'pending',
-    problems: [],
-  },
-  {
-    slug: 'stacks',
-    label: 'Stacks',
-    pattern: null,
-    category: 'LIFO Structures',
+    pattern: null, 
+    category: 'Searching',
     status: 'pending',
     problems: [],
   },
@@ -90,3 +74,10 @@ export const TOPICS: TopicConfig[] = [
 
 export const getTopicBySlug = (slug: string) => TOPICS.find((t) => t.slug === slug)
 export const getTopicByLabel = (label: string) => TOPICS.find((t) => t.label === label)
+
+
+
+export const getTestedTypes = (topic?: TopicConfig): any[] => {
+  if (!topic) return []
+  return topic.problems.filter((p) => p.status === 'tested').map((p) => p.id)
+}
