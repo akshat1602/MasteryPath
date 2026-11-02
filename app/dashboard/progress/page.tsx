@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import { getTopicBySlug } from '@/lib/topics'
 
 // Strict types for attempts & topic performance
 export interface AttemptRecord {
@@ -30,7 +31,7 @@ export default function ProgressPage() {
   const [showSimulatedData, setShowSimulatedData] = useState(false)
   const [hoveredTrendIdx, setHoveredTrendIdx] = useState<number | null>(null)
 
-  // Demo Attempts Data for previewing
+  // Demo Attempts Data for previewing (sample values only, never real student data)
   const demoAttempts: AttemptRecord[] = [
     { id: 'att-1', topic: 'Count Close Pairs', pattern: 'Two Pointers', date: 'Today, 2:40 PM', score: 100, passed: true, isTransfer: true },
     { id: 'att-2', topic: 'Two Sum Sorted', pattern: 'Two Pointers', date: 'Yesterday', score: 85, passed: true, isTransfer: false },
@@ -38,7 +39,7 @@ export default function ProgressPage() {
     { id: 'att-4', topic: 'Second-Largest Element', pattern: 'Arrays', date: '5 days ago', score: 92, passed: true, isTransfer: false },
   ]
 
-  // Demo Metrics
+  // Demo Metrics (sample values only)
   const topicMetrics: TopicProgressMetric[] = [
     {
       topic: 'Two Pointers',
@@ -63,7 +64,7 @@ export default function ProgressPage() {
     {
       topic: 'Arrays Fundamentals',
       pattern: 'Order & Rotation',
-      slug: 'two-pointers',
+      slug: 'arrays', // not in lib/topics.ts yet, so it shows "Coming soon" instead of a link
       recallScore: 88,
       transferScore: 78,
       gap: 10,
@@ -90,7 +91,7 @@ export default function ProgressPage() {
       {/* --- Page Header with Mode Toggle --- */}
       <header className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
               Learning Progress &amp; Transfer Analytics
             </h1>
@@ -103,22 +104,30 @@ export default function ProgressPage() {
           </p>
         </div>
 
-        {/* Live Preview Toggle */}
+        {/* Sample-data preview toggle */}
         <div className="flex items-center gap-3">
           <button
             type="button"
+            aria-pressed={showSimulatedData}
             onClick={() => setShowSimulatedData(!showSimulatedData)}
-            className={`inline-flex h-9 items-center gap-2 rounded-xl border px-3.5 text-xs font-medium transition-all ${
+            className={`inline-flex h-9 items-center gap-2 rounded-xl border px-3.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] ${
               showSimulatedData
-                ? 'border-emerald-500/40 bg-emerald-950/20 text-emerald-300 shadow-[0_0_15px_rgba(52,211,153,0.15)]'
+                ? 'border-amber-500/40 bg-amber-950/20 text-amber-300'
                 : 'border-[#292725] bg-[#11100F] text-[#9A9692] hover:text-white hover:border-[#3D3A37]'
             }`}
           >
-            <span className={`h-2 w-2 rounded-full ${showSimulatedData ? 'bg-emerald-400 animate-pulse' : 'bg-[#73706D]'}`} />
-            <span>{showSimulatedData ? 'Showing Simulated Data' : 'Preview Live Analytics'}</span>
+            <span className={`h-2 w-2 rounded-full ${showSimulatedData ? 'bg-amber-400' : 'bg-[#8F8B87]'}`} />
+            <span>{showSimulatedData ? 'Showing sample data · Hide' : 'Preview with sample data'}</span>
           </button>
         </div>
       </header>
+
+      {/* --- Sample data banner --- */}
+      {showSimulatedData && (
+        <div role="note" className="rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-[13px] text-amber-200">
+          <span className="font-semibold">Sample data.</span> Everything below is a preview of the layout with made-up values. It is not your real performance.
+        </div>
+      )}
 
       {/* --- Top 4 Ambient Highlights Strip --- */}
       <section aria-label="Progress overview metrics" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -156,7 +165,7 @@ export default function ProgressPage() {
             sub: 'Modified SM-2 decay metric',
             gradient: 'from-amber-500/20 via-amber-500/5 to-transparent',
             border: 'hover:border-amber-500/40',
-            badge: '2 Due Audits',
+            badge: showSimulatedData ? 'Sample: 2 audits' : 'No data yet',
             color: 'text-amber-400',
           },
         ].map((stat, i) => (
@@ -165,16 +174,16 @@ export default function ProgressPage() {
             className={`group relative overflow-hidden rounded-2xl border border-[#242220] bg-[#0E0D0C] p-5 transition-all duration-300 ${stat.border} hover:-translate-y-0.5 hover:shadow-xl`}
           >
             <div className={`pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b ${stat.gradient} opacity-50 transition-opacity group-hover:opacity-100`} />
-            <div className="relative z-10 flex items-start justify-between">
+            <div className="relative z-10 flex items-start justify-between gap-2">
               <div>
                 <p className="text-xs font-medium text-[#9A9692]">{stat.title}</p>
                 <p className="mt-2 text-3xl font-extrabold tracking-tight text-white">{stat.value}</p>
               </div>
-              <span className={`rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-mono ${stat.color}`}>
+              <span className={`shrink-0 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-mono ${stat.color}`}>
                 {stat.badge}
               </span>
             </div>
-            <p className="relative z-10 mt-3 text-[11px] text-[#73706D]">{stat.sub}</p>
+            <p className="relative z-10 mt-3 text-[11px] text-[#8F8B87]">{stat.sub}</p>
           </div>
         ))}
       </section>
@@ -192,19 +201,19 @@ export default function ProgressPage() {
 
             <h2 className="text-xl font-bold text-white mb-2">No attempts recorded yet</h2>
             <p className="max-w-md text-sm leading-relaxed text-[#A8A39E] mb-6">
-              You haven&apos;t solved problems or submitted checkpoints yet. Once you complete exercises in the workspace, your recall curves, novel transfer scores, and SM-2 retention ratings will display here automatically.
+              Progress tracking is still being connected, so this page has no real data yet. You can keep practising in the workspace, or preview the layout with sample data using the button above.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Link
                 href="/dashboard/paths"
-                className="rounded-xl bg-white px-5 py-2.5 text-xs font-semibold text-[#090807] hover:bg-[#E5E5E5] transition-all hover:scale-[1.02] shadow-md"
+                className="rounded-xl bg-white px-5 py-2.5 text-xs font-semibold text-[#090807] hover:bg-[#E5E5E5] transition-all hover:scale-[1.02] shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0E0D0C]"
               >
                 Explore Skill Graph
               </Link>
               <Link
                 href="/practice/two-pointers"
-                className="rounded-xl border border-[#3A3835] bg-[#141210] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#1C1A18] hover:border-[#4D4A46] transition-all"
+                className="rounded-xl border border-[#3A3835] bg-[#141210] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#1C1A18] hover:border-[#4D4A46] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"
               >
                 Practice Two Pointers
               </Link>
@@ -212,17 +221,17 @@ export default function ProgressPage() {
           </div>
         </div>
       ) : (
-        /* Rich Bento Grid with SVG Waveform & Topic Analysis */
+        /* Rich Bento Grid with SVG Waveform & Topic Analysis (sample preview) */
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          
+
           {/* Left 2 Columns: Waveform & Detailed Attempts */}
           <div className="space-y-6 lg:col-span-2">
-            
+
             {/* 1. Dual-Track SVG Curve Visualizer */}
-            <section aria-label="Transfer Gap curve" className="rounded-2xl border border-[#242220] bg-[#0E0D0C] p-6 shadow-xl">
+            <section aria-label="Transfer Gap curve (sample data)" className="rounded-2xl border border-[#242220] bg-[#0E0D0C] p-6 shadow-xl">
               <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-base font-bold text-white">Dual-Track Transfer Waveform</h3>
                     <span className="rounded-full border border-purple-500/30 bg-purple-950/20 px-2 py-0.5 text-[10px] font-mono text-purple-300">
                       Δ 24% Gap
@@ -290,7 +299,7 @@ export default function ProgressPage() {
                   })}
                 </svg>
 
-                <div className="mt-3 flex justify-between text-[11px] font-mono text-[#73706D]">
+                <div className="mt-3 flex justify-between text-[11px] font-mono text-[#8F8B87]">
                   {trendHistory.map((p, i) => (
                     <span key={i} className={hoveredTrendIdx === i ? 'text-white font-bold' : ''}>
                       {p.session}
@@ -301,17 +310,17 @@ export default function ProgressPage() {
             </section>
 
             {/* 2. Recent Attempts Log Table */}
-            <section aria-label="Recent attempts" className="rounded-2xl border border-[#242220] bg-[#0E0D0C] p-6 shadow-xl space-y-4">
+            <section aria-label="Recent attempts (sample data)" className="rounded-2xl border border-[#242220] bg-[#0E0D0C] p-6 shadow-xl space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-white">Recent Evaluation Submissions</h3>
-                <span className="text-[11px] font-mono text-[#73706D]">{attempts.length} Recorded Attempts</span>
+                <span className="text-[11px] font-mono text-[#8F8B87]">{attempts.length} Sample Attempts</span>
               </div>
 
               <div className="divide-y divide-[#1F1D1B] rounded-xl border border-[#1E1C1A] bg-[#141210] overflow-hidden">
                 {attempts.map((att) => (
                   <div key={att.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3 transition-colors hover:bg-white/[0.02]">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-semibold text-white">{att.topic}</span>
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-mono uppercase ${
                           att.isTransfer
@@ -321,7 +330,7 @@ export default function ProgressPage() {
                           {att.isTransfer ? 'Novel Variation' : 'Seed Recall'}
                         </span>
                       </div>
-                      <p className="mt-0.5 text-xs text-[#73706D]">{att.pattern} · {att.date}</p>
+                      <p className="mt-0.5 text-xs text-[#8F8B87]">{att.pattern} · {att.date}</p>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -342,78 +351,88 @@ export default function ProgressPage() {
 
           {/* Right Column: Pattern Transfer Gap & Retention Status Cards */}
           <div className="space-y-6">
-            
+
             {/* Per-Pattern Transfer Gap Breakdown */}
-            <section aria-label="Topic breakdown" className="rounded-2xl border border-[#242220] bg-[#0E0D0C] p-6 shadow-xl space-y-4">
+            <section aria-label="Topic breakdown (sample data)" className="rounded-2xl border border-[#242220] bg-[#0E0D0C] p-6 shadow-xl space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-white">Pattern Transfer Gaps</h3>
-                <span className="text-[10px] font-mono text-[#73706D]">Module 5 Engine</span>
+                <span className="text-[10px] font-mono text-[#8F8B87]">Sample</span>
               </div>
 
               <div className="space-y-4">
-                {topicMetrics.map((tm, idx) => (
-                  <div key={idx} className="rounded-xl border border-[#1E1C1A] bg-[#141210] p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="text-xs font-bold text-white">{tm.topic}</h4>
-                        <p className="text-[11px] text-[#73706D]">{tm.pattern}</p>
-                      </div>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-mono uppercase ${
-                        tm.gap > 20
-                          ? 'border border-amber-500/30 bg-amber-950/40 text-amber-300'
-                          : 'border border-emerald-500/30 bg-emerald-950/40 text-emerald-300'
-                      }`}>
-                        Δ {tm.gap}% Gap
-                      </span>
-                    </div>
+                {topicMetrics.map((tm, idx) => {
+                  // Only link to topics that really have a practice page with generation
+                  const practiceTopic = getTopicBySlug(tm.slug)
+                  const canPractice = Boolean(practiceTopic?.pattern)
 
-                    {/* Progress Comparison */}
-                    <div className="space-y-2 text-[11px]">
-                      <div>
-                        <div className="flex justify-between text-[#9A9692] mb-1">
-                          <span>Recall Accuracy</span>
-                          <span className="text-white font-mono">{tm.recallScore}%</span>
+                  return (
+                    <div key={idx} className="rounded-xl border border-[#1E1C1A] bg-[#141210] p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <h4 className="text-xs font-bold text-white">{tm.topic}</h4>
+                          <p className="text-[11px] text-[#8F8B87]">{tm.pattern}</p>
                         </div>
-                        <div className="h-1.5 w-full rounded-full bg-[#201D1A] overflow-hidden">
-                          <div className="h-full rounded-full bg-emerald-400" style={{ width: `${tm.recallScore}%` }} />
-                        </div>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-mono uppercase ${
+                          tm.gap > 20
+                            ? 'border border-amber-500/30 bg-amber-950/40 text-amber-300'
+                            : 'border border-emerald-500/30 bg-emerald-950/40 text-emerald-300'
+                        }`}>
+                          Δ {tm.gap}% Gap
+                        </span>
                       </div>
 
-                      <div>
-                        <div className="flex justify-between text-[#9A9692] mb-1">
-                          <span>Transfer Accuracy</span>
-                          <span className="text-white font-mono">{tm.transferScore}%</span>
+                      {/* Progress Comparison */}
+                      <div className="space-y-2 text-[11px]">
+                        <div>
+                          <div className="flex justify-between text-[#9A9692] mb-1">
+                            <span>Recall Accuracy</span>
+                            <span className="text-white font-mono">{tm.recallScore}%</span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-[#201D1A] overflow-hidden">
+                            <div className="h-full rounded-full bg-emerald-400" style={{ width: `${tm.recallScore}%` }} />
+                          </div>
                         </div>
-                        <div className="h-1.5 w-full rounded-full bg-[#201D1A] overflow-hidden">
-                          <div className="h-full rounded-full bg-[#A78BFA]" style={{ width: `${tm.transferScore}%` }} />
+
+                        <div>
+                          <div className="flex justify-between text-[#9A9692] mb-1">
+                            <span>Transfer Accuracy</span>
+                            <span className="text-white font-mono">{tm.transferScore}%</span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-[#201D1A] overflow-hidden">
+                            <div className="h-full rounded-full bg-[#A78BFA]" style={{ width: `${tm.transferScore}%` }} />
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="pt-2 border-t border-[#1C1A18] flex items-center justify-between text-[11px]">
-                      <span className="text-[#73706D]">Retention: <strong className="text-white font-mono">{tm.retentionScore}%</strong></span>
-                      <Link href={`/practice/${tm.slug}`} className="text-[#A78BFA] hover:text-white font-medium transition-colors">
-                        Practice →
-                      </Link>
+                      <div className="pt-2 border-t border-[#1C1A18] flex items-center justify-between text-[11px]">
+                        <span className="text-[#8F8B87]">Retention: <strong className="text-white font-mono">{tm.retentionScore}%</strong></span>
+                        {canPractice ? (
+                          <Link href={`/practice/${tm.slug}`} className="text-[#A78BFA] hover:text-white font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA] rounded">
+                            Practice →
+                          </Link>
+                        ) : (
+                          <span className="text-[#8F8B87]">Coming soon</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </section>
 
-            {/* Retention Decay Warning Alert */}
+            {/* Retention Decay Warning Alert (sample) */}
             <div className="rounded-2xl border border-[#3E2D1D] bg-gradient-to-r from-[#1C130B] to-[#120F0D] p-5 space-y-2 shadow-lg">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-300">Decay Mitigation</span>
+                <span className="h-2 w-2 rounded-full bg-amber-400" />
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-300">Decay Mitigation · Sample</span>
               </div>
               <p className="text-xs text-[#C4BDB5] leading-relaxed">
-                Concepts flagged with high transfer gaps are prioritized by the SM-2 scheduler for prompt resurfacing in your Weekly Fundamentals Audit[cite: 18, 20].
+                Concepts flagged with high transfer gaps are meant to be prioritized by the SM-2 scheduler for resurfacing in your Weekly Fundamentals Audit.
               </p>
               <div className="pt-2">
                 <Link
                   href="/practice/two-pointers"
-                  className="inline-flex h-8 items-center justify-center rounded-lg bg-amber-400 px-3 text-xs font-semibold text-[#0E0D0C] hover:bg-amber-300 transition-colors"
+                  className="inline-flex h-8 items-center justify-center rounded-lg bg-amber-400 px-3 text-xs font-semibold text-[#0E0D0C] hover:bg-amber-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 >
                   Start Two Pointers Audit
                 </Link>
@@ -426,15 +445,15 @@ export default function ProgressPage() {
 
       {/* --- Bottom Explainer Cards --- */}
       <section aria-label="Metric explainers" className="rounded-2xl border border-[#292725] bg-[#11100F] p-6 space-y-4 shadow-xl">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-[#A78BFA]">
             What is measured on this page
           </h3>
-          <span className="text-[11px] text-[#73706D]">MasteryPath Research Architecture</span>
+          <span className="text-[11px] text-[#8F8B87]">MasteryPath Research Architecture</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="rounded-xl border border-[#242220] bg-[#141210] p-4.5 space-y-2">
+          <div className="rounded-xl border border-[#242220] bg-[#141210] p-4 space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-semibold text-white">Recall Score</h4>
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
@@ -444,7 +463,7 @@ export default function ProgressPage() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-[#242220] bg-[#141210] p-4.5 space-y-2">
+          <div className="rounded-xl border border-[#242220] bg-[#141210] p-4 space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-semibold text-white">Transfer Score &amp; Gap</h4>
               <span className="rounded bg-[#A78BFA]/10 px-1.5 py-0.5 text-[10px] font-mono text-[#A78BFA]">Δ Gap</span>
@@ -454,13 +473,13 @@ export default function ProgressPage() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-[#242220] bg-[#141210] p-4.5 space-y-2">
+          <div className="rounded-xl border border-[#242220] bg-[#141210] p-4 space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-semibold text-white">SM-2 Retention Decay</h4>
               <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
             </div>
             <p className="text-xs text-[#A8A39E] leading-relaxed">
-              Monitored by the adaptive scheduler to trigger timely fundamentals audits before prerequisites fade[cite: 18, 20].
+              Designed to trigger timely fundamentals audits before prerequisites fade.
             </p>
           </div>
         </div>

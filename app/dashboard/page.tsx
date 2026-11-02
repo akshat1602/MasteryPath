@@ -193,6 +193,9 @@ export default function DashboardPage() {
             </Link>
           </div>
         </header>
+        <div role="note" className="mb-6 rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-[13px] text-amber-200">
+  <span className="font-semibold">Demo data.</span> The stats, charts, retention queue, resume card and activity bars on this page are sample values, not your real progress. Real tracking will be connected once the progress database is agreed.
+</div>
 
         {/* --- Top 4 Vibrant Highlight Cards --- */}
         <section aria-label="Quick metrics" className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -544,7 +547,7 @@ export default function DashboardPage() {
                   <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse"></span>
                   <h3 className="text-sm font-bold tracking-tight text-white">Retention Queue</h3>
                 </div>
-                <span className="text-[10px] font-mono text-[#73706D]">SM-2 Active</span>
+                <span className="text-[10px] font-mono text-[#73706D]">SM-2 · Sample</span>
               </div>
               <p className="mb-4 text-xs text-[#9A9692]">
                 Scheduled review to halt knowledge decay before it compromises tree prerequisites.
