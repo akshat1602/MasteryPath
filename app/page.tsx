@@ -152,8 +152,6 @@ setAdaptiveDecision(null);
     setSubmissionLoading(true);
     setSubmissionError("");
     setSubmissionResult(null);
-    setAttempts((previous) => previous + 1);
-
     try {
       const response = await fetch("/api/judge0/submit", {
         method: "POST",
@@ -172,20 +170,38 @@ setAdaptiveDecision(null);
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(
-          data.error || "Code submission failed. Please try again.",
-        );
-      }
+const serviceFailureVerdicts = [
+  "SERVICE_UNAVAILABLE",
+  "RATE_LIMITED",
+  "SERVICE_ERROR",
+];
 
+if (serviceFailureVerdicts.includes(data.verdict)) {
+  setSubmissionResult(data);
+  setSubmissionError(
+    data.error || "The execution service is temporarily unavailable.",
+  );
+  return;
+}
+
+if (!response.ok) {
+  throw new Error(
+    data.error || "Code submission failed. Please try again.",
+  );
+}
 
 setSubmissionResult(data);
 
 const verdict = data.verdict;
+
 if (
   verdict === "ACCEPTED" ||
-  verdict === "WRONG_ANSWER"
+  verdict === "WRONG_ANSWER" ||
+  verdict === "EXECUTION_FAILED"
 ) {
+  // Count only valid student submission outcomes.
+  setAttempts((previous) => previous + 1);
+
   const decision = decideNextDifficulty({
     currentDifficulty: difficulty,
     verdict,
@@ -197,7 +213,7 @@ if (
   setAdaptiveDecision(decision);
   setDifficulty(decision.nextDifficulty);
 
-  if (data.accepted === true) {
+  if (verdict === "ACCEPTED" && data.accepted === true) {
     setShowNextProblem(true);
   }
 }
