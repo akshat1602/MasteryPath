@@ -1,0 +1,191 @@
+'use client'
+
+import React, { useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import MasteryGraph, { type TopicNodeData } from '@/components/MasteryGraph'
+import SubmissionModal from '@/components/SubmissionModal'
+import { getTopicBySlug, getTopicByLabel } from '@/lib/topics'
+
+export default function PathsPage() {
+  const router = useRouter()
+  const [selectedNode, setSelectedNode] = useState<{
+    id: string | null
+    data: TopicNodeData | null
+  }>({ id: null, data: null })
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const handleNodeSelect = (nodeId: string, nodeData: TopicNodeData) => {
+    // Match the clicked node to our practice topics: slug first, then label
+    const topic =
+      getTopicBySlug(String(nodeData?.slug ?? '')) ??
+      getTopicByLabel(String(nodeData?.label ?? ''))
+
+    if (topic) {
+      // Supported topics generate real problems; others show "Coming soon" on the practice page
+      router.push(`/practice/${topic.slug}`)
+      return
+    }
+
+    // Any other node keeps the checkpoint modal
+    setSelectedNode({ id: nodeId, data: nodeData })
+    setIsModalOpen(true)
+  }
+
+  return (
+    <div className="min-h-screen bg-[#070706] text-white selection:bg-[#A78BFA]/30 pb-20">
+      <div className="mx-auto max-w-[1280px] px-4 pt-8 sm:px-6 lg:px-8 space-y-6">
+
+        {/* --- Top Header & Action Row --- */}
+        <header className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                Mastery Skill Graph
+              </h1>
+              <span className="rounded-full border border-purple-500/30 bg-purple-950/20 px-2.5 py-0.5 text-xs font-semibold text-purple-300">
+                Interactive Prerequisite Tree
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-[#9A9692] sm:text-sm">
+              Explore structural prerequisite chains. Click a topic to open its practice workspace.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/practice/two-pointers"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs font-semibold text-[#090807] transition-all hover:bg-[#E5E5E5] hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#070706]"
+            >
+              <span>Practice Two Pointers</span>
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </Link>
+          </div>
+        </header>
+
+        {/* --- Demo data notice for the summary cards --- */}
+        <div role="note" className="rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-[13px] text-amber-200">
+          <span className="font-semibold">Demo data.</span> The four summary cards below are sample values, not your real mastery. They will be connected once progress tracking is agreed.
+        </div>
+
+        {/* --- Top Metrics Summary Strip --- */}
+        <section aria-label="Graph metrics (demo data)" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              title: 'Total Core Topics',
+              value: '4',
+              sub: 'Two Pointers → DFS',
+              gradient: 'from-emerald-500/20 via-emerald-500/5 to-transparent',
+              border: 'hover:border-emerald-500/40',
+              badge: 'Curriculum Scope',
+              color: 'text-emerald-400',
+            },
+            {
+              title: 'Prerequisite Chains',
+              value: '3',
+              sub: 'Linear to Hierarchical',
+              gradient: 'from-purple-500/20 via-purple-500/5 to-transparent',
+              border: 'hover:border-purple-500/40',
+              badge: 'Dependencies',
+              color: 'text-purple-400',
+            },
+            {
+              title: 'Decaying Prerequisites',
+              value: '1',
+              sub: 'Two Pointers needs audit',
+              gradient: 'from-amber-500/20 via-amber-500/5 to-transparent',
+              border: 'hover:border-amber-500/40',
+              badge: 'SM-2 Flagged',
+              color: 'text-amber-400',
+            },
+            {
+              title: 'Overall Tree Mastery',
+              value: '50%',
+              sub: '2 of 4 nodes validated',
+              gradient: 'from-cyan-500/20 via-cyan-500/5 to-transparent',
+              border: 'hover:border-cyan-500/40',
+              badge: 'Progress',
+              color: 'text-cyan-400',
+            },
+          ].map((item, i) => (
+            <div
+              key={i}
+              className={`group relative overflow-hidden rounded-2xl border border-[#242220] bg-[#0E0D0C] p-5 transition-all duration-300 ${item.border} hover:-translate-y-0.5 hover:shadow-xl`}
+            >
+              <div
+                className={`pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b ${item.gradient} opacity-50 transition-opacity group-hover:opacity-100`}
+              />
+              <div className="relative z-10 flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-medium text-[#9A9692]">{item.title}</p>
+                  <p className="mt-2 text-3xl font-extrabold tracking-tight text-white">{item.value}</p>
+                </div>
+                <span className={`rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-mono ${item.color}`}>
+                  {item.badge}
+                </span>
+              </div>
+              <p className="relative z-10 mt-3 text-[11px] text-[#8F8B87]">{item.sub}</p>
+              <span className="relative z-10 mt-3 inline-block rounded-full border border-amber-500/30 bg-amber-950/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300">
+                Demo data
+              </span>
+            </div>
+          ))}
+        </section>
+
+        {/* --- Main Skill Graph Bento Container --- */}
+        <div className="relative overflow-hidden rounded-2xl border border-[#242220] bg-[#0E0D0C] shadow-2xl">
+          {/* Graph Toolbar Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#242220] bg-[#141210] px-6 py-3.5">
+            <div className="flex items-center gap-3">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-white">
+                Knowledge Graph Canvas
+              </span>
+            </div>
+
+            {/* Status Legend */}
+            <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-[#9A9692]">
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                <span>Mastered</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-amber-400" />
+                <span>Decaying (Audit Due)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-orange-400" />
+                <span>Active</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-[#555]" />
+                <span>Locked</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive Canvas Viewport */}
+          <div className="h-[620px] w-full bg-[radial-gradient(#1e1c1a_1px,transparent_1px)] [background-size:18px_18px]">
+            <MasteryGraph onNodeSelect={handleNodeSelect} />
+          </div>
+
+          {/* Canvas Bottom Instructions */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-[#242220] bg-[#11100F] px-6 py-3 text-xs text-[#8F8B87]">
+            <span>Click a topic node to open its practice workspace.</span>
+            <span className="font-mono text-[#A78BFA]">Controls: Scroll to zoom · Drag to pan</span>
+          </div>
+        </div>
+
+        {/* Checkpoint Modal Integration */}
+        <SubmissionModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          nodeId={selectedNode.id}
+          nodeData={selectedNode.data}
+        />
+      </div>
+    </div>
+  )
+}
