@@ -16,6 +16,8 @@ type Props = {
   testCases: GeneratedProblem['testCases']
   hintsUsed: number
   currentDifficulty: Difficulty
+  // Lets the page use the engine's recommendation for the next problem
+  onAdaptiveResult?: (result: AdaptiveOutput) => void
 }
 
 // Service problems mean "retry later", so the student isn't punished
@@ -43,7 +45,12 @@ function describeFailure(r?: Judge0TestResult): { label: string; detail: string 
   return { label: status || 'Execution failed', detail: stderr || null }
 }
 
-export default function RunVerifyPanel({ testCases, hintsUsed, currentDifficulty }: Props) {
+export default function RunVerifyPanel({
+  testCases,
+  hintsUsed,
+  currentDifficulty,
+  onAdaptiveResult,
+}: Props) {
   const [languageId, setLanguageId] = useState<LanguageId>(LANGUAGES[0].id)
   const [code, setCode] = useState<string>(STARTERS[LANGUAGES[0].id])
   const [running, setRunning] = useState(false)
@@ -102,6 +109,7 @@ export default function RunVerifyPanel({ testCases, hintsUsed, currentDifficulty
           if (adaptiveRes.ok) {
             const adaptiveAction: AdaptiveOutput = await adaptiveRes.json()
             setAdaptiveFeedback(adaptiveAction)
+            onAdaptiveResult?.(adaptiveAction)
 
             // Only write to learning performance when this is true
             if (adaptiveAction.updateLearningPerformance) {

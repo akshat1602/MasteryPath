@@ -1,23 +1,23 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { generateProblem, ApiError } from '@/lib/services/problemService'
 import type { Difficulty, GeneratedProblem, ProblemType } from '@/lib/ai/problem-types'
-import { TOPICS, getTopicBySlug, getTestedTypes } from '@/lib/topics'
+import { TOPICS, getTopicBySlug, getAvailableTypes } from '@/lib/topics'
 import RunVerifyPanel from '@/components/RunVerifyPanel'
 import CopyButton from '@/components/CopyButton'
 
-// Starting level from the project brief. Adapting it later is Anshika's logic, not the UI's.
-const DEFAULT_DIFFICULTY: Difficulty = 'Medium'
+// Level for the very first problem. After that, the adaptive engine decides.
+const STARTING_DIFFICULTY: Difficulty = 'Medium'
 
-// Rotate through tested types so the same one is not served twice in a row
-function pickNextType(tested: ProblemType[], last: ProblemType | null): ProblemType | undefined {
-  if (tested.length === 0) return undefined
-  if (!last) return tested[0]
-  const i = tested.indexOf(last)
-  return tested[(i + 1) % tested.length]
+// Rotate through available types so the same one is not served twice in a row
+function pickNextType(available: ProblemType[], last: ProblemType | null): ProblemType | undefined {
+  if (available.length === 0) return undefined
+  if (!last) return available[0]
+  const i = available.indexOf(last)
+  return available[(i + 1) % available.length]
 }
 
 export default function PracticeTopicPage() {
@@ -31,26 +31,41 @@ export default function PracticeTopicPage() {
   const [referenceVerified, setReferenceVerified] = useState(false)
   const [problemId, setProblemId] = useState(0)
   const [currentType, setCurrentType] = useState<ProblemType | null>(null)
-  
+
   // Track hints for the adaptive engine
   const [hintsUsed, setHintsUsed] = useState(0)
+
+  // Difficulty of the problem on screen vs. the engine's recommendation for the next one
+  const [currentDifficulty, setCurrentDifficulty] = useState<Difficulty>(STARTING_DIFFICULTY)
+  const [nextDifficulty, setNextDifficulty] = useState<Difficulty>(STARTING_DIFFICULTY)
+
+  // Start fresh when the student switches topic
+  useEffect(() => {
+    setProblem(null)
+    setCurrentType(null)
+    setError(null)
+    setHintsUsed(0)
+    setCurrentDifficulty(STARTING_DIFFICULTY)
+    setNextDifficulty(STARTING_DIFFICULTY)
+  }, [params.topic])
 
   const handleGenerate = async () => {
     if (!topic?.pattern) return
     setLoading(true)
     setError(null)
     setHintsUsed(0) // Reset hints on new problem
-    
+
     try {
-      const requestedType = pickNextType(getTestedTypes(topic), currentType)
-      
+      const requestedType = pickNextType(getAvailableTypes(topic), currentType)
+
       const res = await generateProblem(topic.pattern, {
-        difficulty: DEFAULT_DIFFICULTY,
+        difficulty: nextDifficulty,
         problemType: requestedType,
         previousProblemType: currentType ?? undefined,
       })
-      
+
       setProblem(res.result)
+      setCurrentDifficulty(nextDifficulty)
       setProblemId((n) => n + 1)
       setReferenceVerified(res.validation.referenceVerified)
       setCurrentType(res.problemType ?? requestedType ?? null)
@@ -125,9 +140,9 @@ export default function PracticeTopicPage() {
                   <li key={p.id} className="flex items-center justify-between p-2.5 rounded-lg border border-[#242220] bg-[#141210]">
                     <span className="text-[#D0D0D0]">{p.title}</span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-mono ${
-                      p.status === 'tested' ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/30' : 'bg-[#1F1F1F] text-[#73706D]'
+                      p.status === 'available' ? 'bg-[#1F1F1F] text-[#D0D0D0] border border-[#292725]' : 'bg-[#1F1F1F] text-[#73706D]'
                     }`}>
-                      {p.status === 'tested' ? 'Tested' : 'Pending'}
+                      {p.status === 'available' ? 'Available' : 'Pending'}
                     </span>
                   </li>
                 ))}
@@ -160,6 +175,9 @@ export default function PracticeTopicPage() {
           <span className="rounded-full bg-[#1A1816] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#A8A39E] border border-[#292725]">
             {topic.category}
           </span>
+          <span className="rounded-full bg-[#1A1816] px-3 py-1 text-xs text-[#9A9692] border border-[#292725]">
+            Level: {currentDifficulty}
+          </span>
         </div>
       </div>
 
@@ -173,17 +191,20 @@ export default function PracticeTopicPage() {
           disabled={loading}
           className="h-10 w-full whitespace-nowrap px-5 sm:w-auto rounded-lg bg-white text-[#090807] text-sm font-semibold hover:bg-[#E5E5E5] transition-all disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#090807]"
         >
-          {loading ? 'Generating… (up to a minute)' : problem ? 'Generate New Problem' : 'Generate Problem'}
+          {loading
+            ? 'Generating… (up to a minute)'
+            : problem
+            ? `Generate New Problem · ${nextDifficulty}`
+            : 'Generate Problem'}
         </button>
       </div>
 
       {topic.problems.length > 0 && (
         <div className="mb-8 rounded-xl border border-[#242220] bg-[#11100F] p-4">
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-[#73706D]">
-              Topic Problem Variants & Validation Status
+              Problem Variants
             </h3>
-            <span className="text-[11px] text-[#A8A39E] font-mono">Module 3 Scope</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {topic.problems.map((p) => (
@@ -195,11 +216,11 @@ export default function PracticeTopicPage() {
               >
                 <span className="text-[#D0D0D0] font-medium">{p.title}</span>
                 <span className={`rounded-full px-2 py-0.5 text-[10px] uppercase font-mono ${
-                  p.status === 'tested'
-                    ? 'border border-emerald-500/30 bg-emerald-950/40 text-emerald-300'
+                  p.status === 'available'
+                    ? 'border border-[#3A3735] bg-[#1F1F1F] text-[#D0D0D0]'
                     : 'border border-amber-500/30 bg-amber-950/30 text-amber-300'
                 }`}>
-                  {p.status === 'tested' ? '✓ Tested' : 'Pending'}
+                  {p.status === 'available' ? 'Available' : 'Pending'}
                 </span>
                 {p.id === currentType && <span className="text-[10px] font-mono text-[#D0D0D0]">Current</span>}
               </div>
@@ -284,7 +305,7 @@ export default function PracticeTopicPage() {
             ))}
           </div>
 
-          <details 
+          <details
             className="rounded-2xl border border-[#292725] bg-[#11100F] p-6"
             onToggle={(e) => {
               if (e.currentTarget.open) setHintsUsed(1)
@@ -305,11 +326,12 @@ export default function PracticeTopicPage() {
             </div>
           </details>
 
-          <RunVerifyPanel 
-            key={problemId} 
-            testCases={problem.testCases} 
+          <RunVerifyPanel
+            key={problemId}
+            testCases={problem.testCases}
             hintsUsed={hintsUsed}
-            currentDifficulty={DEFAULT_DIFFICULTY} 
+            currentDifficulty={currentDifficulty}
+            onAdaptiveResult={(r) => setNextDifficulty(r.nextDifficulty)}
           />
         </div>
       )}
