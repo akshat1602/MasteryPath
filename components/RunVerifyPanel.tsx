@@ -1,16 +1,26 @@
 'use client'
 
 import React, { useState } from 'react'
-import type { GeneratedProblem } from '@/lib/ai/problem-types'
+import type { GeneratedProblem, Difficulty } from '@/lib/ai/problem-types'
 import type { Judge0Response, Judge0TestResult } from '@/types/api'
 import { LANGUAGES, runAndVerify, type LanguageId } from '@/lib/services/judgeService'
 import { STARTERS } from '@/lib/starterCode'
 
 type Props = {
   testCases: GeneratedProblem['testCases']
+  hintsUsed: number
+  currentDifficulty: Difficulty
 }
 
-// Turn Judge0's raw failure into a clear label, only from what the backend actually gave us
+// Adaptive Engine response contract
+type AdaptiveFeedback = {
+  nextDifficulty: Difficulty
+  action: 'increase' | 'maintain' | 'retry' | 'retry_later'
+  updateLearningPerformance: boolean
+  reason: string
+}
+
+// Turn Judge0's raw failure into a clear label
 function describeFailure(r?: Judge0TestResult): { label: string; detail: string | null } {
   const status = r?.status ?? ''
   const compile = r?.compile_output?.trim()
@@ -28,16 +38,23 @@ function describeFailure(r?: Judge0TestResult): { label: string; detail: string 
   return { label: status || 'Execution failed', detail: stderr || null }
 }
 
-export default function RunVerifyPanel({ testCases }: Props) {
+export default function RunVerifyPanel({ testCases, hintsUsed, currentDifficulty }: Props) {
   const [languageId, setLanguageId] = useState<LanguageId>(LANGUAGES[0].id)
   const [code, setCode] = useState<string>(STARTERS[LANGUAGES[0].id])
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<Judge0Response | null>(null)
   const [error, setError] = useState<string | null>(null)
+  
+  // Track attempts locally for the adaptive engine
+  const [attempts, setAttempts] = useState(0)
+  
+  // Store the adaptive engine's recommendation
+  const [adaptiveFeedback, setAdaptiveFeedback] = useState<AdaptiveFeedback | null>(null)
 
   const handleRun = async () => {
     setError(null)
     setResult(null)
+    setAdaptiveFeedback(null)
 
     if (!code.trim() || code === STARTERS[languageId]) {
       setError('Write some code before running.')
@@ -45,9 +62,45 @@ export default function RunVerifyPanel({ testCases }: Props) {
     }
 
     setRunning(true)
+    const currentAttempt = attempts + 1
+    setAttempts(currentAttempt)
+
     try {
       const res = await runAndVerify(code, languageId, testCases)
       setResult(res)
+
+      // Step 3: Adaptive Engine Adapter
+      // We explicitly treat network/service errors as "Retry Later" to avoid punishing the student
+      const isServiceError = ['SERVICE_UNAVAILABLE', 'RATE_LIMITED', 'SERVICE_ERROR'].includes(res.verdict)
+
+      if (!isServiceError) {
+        try {
+          // Format strictly to Anshika's required adaptive engine shape
+          const adaptiveRes = await fetch('/api/adaptive-engine/evaluate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              currentDifficulty,
+              verdict: res.verdict,
+              accepted: res.accepted,
+              attempts: currentAttempt,
+              hintsUsed,
+            }),
+          })
+
+          if (adaptiveRes.ok) {
+            const adaptiveAction: AdaptiveFeedback = await adaptiveRes.json()
+            setAdaptiveFeedback(adaptiveAction)
+            
+            // "Only write to learning performance when it’s true"
+            if (adaptiveAction.updateLearningPerformance) {
+              console.log('[Adaptive Engine] Mastery metrics updated based on submission.')
+            }
+          }
+        } catch (adaptiveErr) {
+          console.warn('[Adaptive Engine] Adapter sync failed:', adaptiveErr)
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong while running your code.')
     } finally {
@@ -60,7 +113,6 @@ export default function RunVerifyPanel({ testCases }: Props) {
     const results = result.results ?? []
     const total = result.totalTests ?? results.length
 
-    // Only claim success when the backend says so
     if (result.verdict === 'ACCEPTED' && result.accepted === true) {
       return (
         <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/20 p-4 text-sm text-emerald-300">
@@ -111,7 +163,7 @@ export default function RunVerifyPanel({ testCases }: Props) {
       )
     }
 
-    // RATE_LIMITED, SERVICE_UNAVAILABLE, SERVICE_ERROR: no correctness verdict exists
+    // RATE_LIMITED, SERVICE_UNAVAILABLE, SERVICE_ERROR
     return (
       <div className="rounded-xl border border-amber-500/40 bg-amber-950/20 p-4 text-sm text-amber-300 space-y-1">
         <p className="font-semibold">No verdict was produced</p>
@@ -141,7 +193,7 @@ export default function RunVerifyPanel({ testCases }: Props) {
               setLanguageId(next)
             }}
             disabled={running}
-            className="h-9 rounded-lg border border-[#292725] bg-[#090807] px-3 text-sm text-white outline-none focus:border-[#A78BFA] focus-visible:ring-2 focus-visible:ring-[#A78BFA]"
+            className="h-9 rounded-lg border border-[#292725] bg-[#090807] px-3 text-sm text-white outline-none focus:border-white focus-visible:ring-1 focus-visible:ring-white"
           >
             {LANGUAGES.map((l) => (
               <option key={l.id} value={l.id}>
@@ -164,12 +216,15 @@ export default function RunVerifyPanel({ testCases }: Props) {
           rows={14}
           spellCheck={false}
           placeholder="Write your code here..."
-          className="w-full resize-y rounded-xl border border-[#292725] bg-[#090807] p-4 font-mono text-sm text-white outline-none focus:border-[#A78BFA] focus-visible:ring-2 focus-visible:ring-[#A78BFA] placeholder:text-[#55524F]"
+          className="w-full resize-y rounded-xl border border-[#292725] bg-[#090807] p-4 font-mono text-sm text-white outline-none focus:border-white focus-visible:ring-1 focus-visible:ring-white placeholder:text-[#55524F]"
         />
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <p className="text-xs text-[#8F8B87]">Runs up to {Math.min(testCases.length, 5)} tests. This can take a little while.</p>
+        <div className="flex items-center gap-3">
+          <p className="text-xs text-[#73706D]">Runs up to {Math.min(testCases.length, 5)} tests.</p>
+          {attempts > 0 && <span className="text-[10px] font-mono text-[#A8A39E]">Attempt {attempts}</span>}
+        </div>
         <button
           onClick={handleRun}
           disabled={running}
@@ -179,9 +234,30 @@ export default function RunVerifyPanel({ testCases }: Props) {
         </button>
       </div>
 
-      <div aria-live="polite" className="space-y-3">
+      <div aria-live="polite" className="space-y-4">
         {error && <p className="text-sm text-red-400">{error}</p>}
         {renderResult()}
+        
+        {/* Adaptive Engine Output Card */}
+        {adaptiveFeedback && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 mt-2 rounded-xl border border-[#A78BFA]/30 bg-[#A78BFA]/10 p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-[#A78BFA]/20 pb-2">
+              <h4 className="text-sm font-semibold text-[#D0BFFF]">Adaptive Engine Feedback</h4>
+              <span className="rounded bg-[#A78BFA]/20 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-[#D0BFFF]">
+                Action: {adaptiveFeedback.action.replace('_', ' ')}
+              </span>
+            </div>
+            <p className="text-sm text-[#D0D0D0] leading-relaxed">
+              {adaptiveFeedback.reason}
+            </p>
+            <div className="flex items-center gap-2 pt-1 text-xs">
+              <span className="text-[#9A9692]">Recommended Next Step:</span>
+              <strong className="font-semibold text-white">
+                {adaptiveFeedback.nextDifficulty} Difficulty
+              </strong>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   )

@@ -10,7 +10,10 @@ export const LANGUAGES = [
 
 export type LanguageId = (typeof LANGUAGES)[number]['id']
 
-const MAX_TESTS = 5 // her endpoint rejects more than 5
+// Step 4: Hidden Test Case Stopgap
+// We restrict the payload to only public sample cases (first 2) to prevent exposing 
+// hidden expected outputs to the client network tab.
+const PUBLIC_TESTS = 2 
 
 export async function runAndVerify(
   sourceCode: string,
@@ -21,6 +24,9 @@ export async function runAndVerify(
     throw new ApiError('Write some code before running.', 400)
   }
 
+  // Strip hidden test cases from the client payload completely
+  const publicCases = testCases.slice(0, PUBLIC_TESTS)
+
   let response: Response
   try {
     response = await fetch('/api/judge0/submit', {
@@ -29,12 +35,12 @@ export async function runAndVerify(
       body: JSON.stringify({
         source_code: sourceCode,
         language_id: languageId,
-        test_cases: testCases.slice(0, MAX_TESTS).map((t) => ({
+        test_cases: publicCases.map((t) => ({
           stdin: t.input,
           expected_output: t.expectedOutput,
         })),
       }),
-      signal: AbortSignal.timeout(100_000), // up to 5 sequential runs x 15s
+      signal: AbortSignal.timeout(100_000), // up to 2 sequential runs
     })
   } catch {
     throw new ApiError('Could not reach the server or the run timed out.', 0)
@@ -42,8 +48,21 @@ export async function runAndVerify(
 
   const data = (await response.json().catch(() => null)) as Judge0Response | null
 
-  // 502s still carry a verdict (RATE_LIMITED, SERVICE_ERROR...), so return the body
-  if (data?.verdict) return data
+  if (data?.verdict) {
+    // Sanitize the returned results to ensure no backend debugging fields leak expected outputs
+   if (data.results) {
+      data.results = data.results.map((r) => ({
+        testCase: r.testCase,
+        status: r.status,
+        passed: r.passed,
+        time: r.time,
+        compile_output: r.compile_output,
+        stderr: r.stderr,
+      })) as any // <-- Add the type override here
+    }
+    
+    return data
+  }
 
   throw new ApiError(data?.error ?? `Run failed (status ${response.status}).`, response.status)
 }

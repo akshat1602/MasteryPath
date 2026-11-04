@@ -86,7 +86,7 @@ export default function ProfileForm({
 
   return (
     <div className="max-w-2xl space-y-6">
-      {/* Profile Photo / Identity Card (Compact & Aligned) */}
+      {/* Profile Photo / Identity Card */}
       <section className="rounded-2xl border border-[#292725] bg-[#11100F] p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -103,7 +103,7 @@ export default function ProfileForm({
             ) : (
               <div
                 aria-hidden="true"
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#292725] bg-[#1A1816] text-lg font-semibold text-[#D0D0D0] shadow-inner"
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[#292725] bg-[#141210] text-lg font-semibold text-white shadow-inner"
               >
                 {getInitials(cleanName || initialName || displayName)}
               </div>
@@ -113,7 +113,7 @@ export default function ProfileForm({
               <h3 className="text-base font-semibold text-white">
                 {cleanName || displayName || 'Learner'}
               </h3>
-              <p className="text-xs text-[#9A9692]">{email}</p>
+              <p className="text-xs text-[#A8A39E]">{email}</p>
               <div className="mt-1 flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
                 <span className="text-[11px] text-[#73706D]">Google OAuth Linked</span>
@@ -122,7 +122,7 @@ export default function ProfileForm({
           </div>
 
           <div className="text-left sm:text-right">
-            <span className="inline-block rounded-md border border-[#292725] bg-[#141210] px-2.5 py-1 text-[11px] font-medium text-[#73706D]">
+            <span className="inline-block rounded-md border border-[#292725] bg-[#090807] px-2.5 py-1 text-[11px] font-medium text-[#73706D]">
               Avatar managed via Google
             </span>
           </div>
@@ -137,7 +137,7 @@ export default function ProfileForm({
           {/* Full Name */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-medium uppercase tracking-wider text-[#A5A19D]" htmlFor="fullName">
+              <label className="text-xs font-medium uppercase tracking-wider text-[#73706D]" htmlFor="fullName">
                 Full name
               </label>
               <span className="text-[11px] font-mono text-[#73706D]">
@@ -157,7 +157,7 @@ export default function ProfileForm({
                 if (success) setSuccess('')
               }}
               placeholder="Your full name"
-              className="h-11 w-full rounded-xl border border-[#292929] bg-[#0D0D0C] px-4 text-sm text-white outline-none transition-all duration-200 placeholder:text-[#73706D]/60 hover:border-[#3A3A3A] focus:border-[#A78BFA] focus-visible:ring-2 focus-visible:ring-[#A78BFA]"
+              className="h-11 w-full rounded-xl border border-[#292725] bg-[#090807] px-4 text-sm text-white outline-none transition-all duration-200 placeholder:text-[#73706D] hover:border-[#3D3A37] focus:border-white focus-visible:ring-1 focus-visible:ring-white"
             />
             <p className="text-[11px] text-[#73706D]">
               Displayed in learning paths, submissions, and session bars.
@@ -166,7 +166,7 @@ export default function ProfileForm({
 
           {/* Email (Read-only) */}
           <div className="space-y-1.5 pt-1">
-            <label className="text-xs font-medium uppercase tracking-wider text-[#A5A19D]" htmlFor="email">
+            <label className="text-xs font-medium uppercase tracking-wider text-[#73706D]" htmlFor="email">
               Email address
             </label>
             <input
@@ -175,7 +175,7 @@ export default function ProfileForm({
               value={email}
               disabled
               readOnly
-              className="h-11 w-full cursor-not-allowed rounded-xl border border-[#242424] bg-[#0A0A0A] px-4 text-sm text-[#73706D] outline-none"
+              className="h-11 w-full cursor-not-allowed rounded-xl border border-[#292725] bg-[#141210] px-4 text-sm text-[#73706D] outline-none"
             />
             <p className="text-[11px] text-[#73706D]">
               Your email is managed by your Google provider account and cannot be modified directly here.
@@ -186,7 +186,7 @@ export default function ProfileForm({
           {error && (
             <div
               role="alert"
-              className="flex items-center gap-2 rounded-lg border border-[#5A3434] bg-[#2A1717] px-3.5 py-2.5 text-xs text-[#E7B8B8]"
+              className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-950/40 px-4 py-3 text-xs text-red-300"
             >
               <svg className="h-4 w-4 shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -199,7 +199,7 @@ export default function ProfileForm({
           {success && (
             <div
               role="status"
-              className="flex items-center gap-2 rounded-lg border border-[#27432F] bg-[#14231A] px-3.5 py-2.5 text-xs text-[#9BE0B0]"
+              className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-950/40 px-4 py-3 text-xs text-emerald-300"
             >
               <svg className="h-4 w-4 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -213,7 +213,7 @@ export default function ProfileForm({
             <button
               type="submit"
               disabled={isSaving || !hasChanges}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs font-semibold text-[#090909] outline-none transition-all duration-200 hover:bg-[#E5E5E5] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#11100F] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs font-semibold text-[#090807] outline-none transition-all duration-200 hover:bg-[#E5E5E5] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#11100F] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSaving ? (
                 <>

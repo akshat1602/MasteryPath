@@ -5,7 +5,6 @@ import Logo from '@/components/Logo'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 
-// Turn raw Supabase errors into friendly text
 function friendlySignupError(message: string) {
   const m = message.toLowerCase()
   if (m.includes('already registered') || m.includes('already exists'))
@@ -23,7 +22,7 @@ function friendlySignupError(message: string) {
 
 function Spinner() {
   return (
-    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <circle className="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" />
       <path className="opacity-90" d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
     </svg>
@@ -48,7 +47,7 @@ function EyeIcon({ hidden }: { hidden: boolean }) {
 
 function CheckIcon({ active }: { active: boolean }) {
   return (
-    <svg className={`h-3.5 w-3.5 transition-colors ${active ? 'text-green-400' : 'text-[#73706D]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className={`h-3.5 w-3.5 transition-colors ${active ? 'text-[#4ADE80]' : 'text-[#73706D]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
     </svg>
   )
@@ -56,7 +55,7 @@ function CheckIcon({ active }: { active: boolean }) {
 
 const lockIcon = (
   <svg
-    className="h-5 w-5 text-[#77736F] transition-colors duration-200 group-focus-within:text-[#B0B3B8]"
+    className="h-5 w-5 text-[#73706D] transition-colors duration-200 group-focus-within:text-white"
     fill="none"
     stroke="currentColor"
     strokeWidth="1.5"
@@ -70,10 +69,17 @@ const lockIcon = (
 )
 
 const inputClass =
-  'h-[52px] w-full rounded-xl border border-[#292929] bg-[#0D0D0C] pl-11 text-[15px] text-white outline-none placeholder:text-[#73706D]/60 transition-all duration-200 hover:border-[#3A3A3A] focus:border-white focus:ring-1 focus:ring-white'
+  'h-[52px] w-full rounded-xl border border-[#292725] bg-[#090807] pl-11 text-[15px] text-white outline-none placeholder:text-[#73706D] transition-all duration-200 hover:border-[#3D3A37] focus:border-white focus:ring-1 focus:ring-white'
 
 const toggleClass =
-  'absolute inset-y-0 right-0 flex items-center pr-4 text-[#77736F] outline-none transition-colors hover:text-white focus-visible:text-white'
+  'absolute inset-y-0 right-0 flex items-center pr-4 text-[#73706D] outline-none transition-colors hover:text-white focus-visible:text-white'
+
+const JOURNEY_NODES = [
+  { label: 'Learn', subtitle: 'Concepts' },
+  { label: 'Practice', subtitle: 'Projects' },
+  { label: 'Build', subtitle: 'Skills' },
+  { label: 'Master', subtitle: 'Career' },
+]
 
 export default function SignUpPage() {
   const supabase = createClient()
@@ -90,20 +96,17 @@ export default function SignUpPage() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [submittedEmail, setSubmittedEmail] = useState('')
 
-  // Animation State for Left Panel
   const [progress, setProgress] = useState(0)
   const [nodesReached, setNodesReached] = useState(0)
 
-  // Gentle reveal animation for progress bar (0 to 68%)
   useEffect(() => {
     const progressTimer = setTimeout(() => {
       setProgress(68)
-      setNodesReached(3) // 3 milestones reached based on 68%
+      setNodesReached(3)
     }, 400)
     return () => clearTimeout(progressTimer)
   }, [])
 
-  // Live validation calculations
   const hasLength = password.length >= 8
   const hasLetterAndNumber = /[a-zA-Z]/.test(password) && /\d/.test(password)
   const passwordsMatch = password === confirmPassword && password.length > 0
@@ -126,14 +129,10 @@ export default function SignUpPage() {
   const handleGoogleSignup = async () => {
     setError('')
     setIsGoogleLoading(true)
-
     const { error: googleError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     })
-
     if (googleError) {
       setError('Could not start Google sign-up. Please try again.')
       setIsGoogleLoading(false)
@@ -143,37 +142,30 @@ export default function SignUpPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
-
     const trimmedEmail = email.trim()
 
     if (!trimmedEmail) {
       setError('Please enter your email address.')
       return
     }
-
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       setError('Please enter a valid email address.')
       return
     }
-
     if (!hasLength || !hasLetterAndNumber) {
       setError('Password does not meet the requirements.')
       return
     }
-
     if (!passwordsMatch) {
       setError('Passwords do not match.')
       return
     }
 
     setIsLoading(true)
-
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: trimmedEmail,
       password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
 
     if (signUpError) {
@@ -199,23 +191,21 @@ export default function SignUpPage() {
   }
 
   return (
-    <main className="relative min-h-screen w-full overflow-hidden bg-[#050505] text-white animate-in fade-in duration-1000">
+    <main className="relative min-h-screen w-full overflow-hidden bg-[#090807] text-white animate-in fade-in duration-1000">
       
-      {/* Ambient Details: Faint grid lines, subtle radial gradient, floating dots */}
+      {/* Ambient details: floating dots ONLY, no grid lines */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0">
-         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:32px_32px]"></div>
-         <div className="absolute -left-32 top-[10%] h-[500px] w-[500px] rounded-full bg-white/[0.02] blur-[100px]" />
-         <div className="absolute -right-32 bottom-[10%] h-[500px] w-[500px] rounded-full bg-white/[0.02] blur-[100px]" />
-         
-         <div className="absolute top-[25%] left-[12%] w-1.5 h-1.5 bg-white/20 rounded-full animate-pulse"></div>
-         <div className="absolute bottom-[20%] left-[35%] w-2 h-2 bg-white/10 rounded-full animate-pulse delay-700"></div>
-         <div className="absolute top-[50%] right-[55%] w-1 h-1 bg-white/30 rounded-full animate-pulse delay-1000"></div>
+        <div className="absolute -left-32 top-[10%] h-[500px] w-[500px] rounded-full bg-white/[0.02] blur-[120px]" />
+        <div className="absolute -right-32 bottom-[10%] h-[500px] w-[500px] rounded-full bg-white/[0.02] blur-[120px]" />
+
+        <div className="absolute left-[12%] top-[25%] h-1.5 w-1.5 animate-pulse rounded-full bg-white/30" />
+        <div className="absolute bottom-[20%] left-[35%] h-2 w-2 animate-pulse rounded-full bg-white/10 delay-700" />
+        <div className="absolute right-[55%] top-[50%] h-1 w-1 animate-pulse rounded-full bg-white/40 delay-1000" />
       </div>
 
       <div className="relative z-10 flex min-h-screen w-full">
-        {/* Left Column: Branding & Animated Learning Path Preview */}
-        <section className="hidden w-1/2 flex-col border-r border-[#242424] bg-[#050505]/60 px-16 pt-[12vh] backdrop-blur-md lg:flex">
-          
+        {/* Left Column */}
+        <section className="hidden w-1/2 flex-col border-r border-[#292725] bg-[#090807]/60 px-16 pt-[12vh] backdrop-blur-md lg:flex">
           <div className="mb-14">
             <Logo />
           </div>
@@ -224,95 +214,94 @@ export default function SignUpPage() {
             <h2 className="text-4xl font-bold leading-[1.12] tracking-[-0.03em] text-white xl:text-[44px]">
               Learn. Build. Master.
             </h2>
-            <p className="mt-4 max-w-lg text-base font-medium leading-7 text-[#9A9692] xl:text-lg">
+            <p className="mt-4 max-w-lg text-base font-medium leading-7 text-[#A8A39E] xl:text-lg">
               Turn what you learn into skills you can actually use.
             </p>
           </div>
 
           {/* Animated Learning Path Card */}
-          <div className="w-full max-w-[420px] rounded-2xl border border-[#242424] bg-[#0A0A0A] p-6 shadow-2xl relative overflow-hidden group">
-            <div className="flex items-center justify-between mb-8">
-              <span className="text-[11px] font-bold text-white tracking-[0.1em] uppercase">Your Learning Journey</span>
-              <span className="text-[11px] font-medium text-[#9A9692] bg-[#141414] px-3 py-1 rounded-full border border-[#242424]">Interactive preview</span>
-            </div>
+          <div className="relative w-full max-w-[420px] overflow-hidden rounded-2xl border border-[#242220] bg-[#0E0D0C] p-6 shadow-xl">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent" />
             
-            {/* Connected Nodes Animation */}
-            <div className="relative flex justify-between items-center mb-10 px-2 mt-4">
-              {/* Static Background Path */}
-              <div className="absolute top-1/2 left-0 w-full h-[2px] bg-[#242424] -translate-y-1/2 z-0"></div>
-              
-              {/* Traveling Pulse Path */}
-              <div 
-                className="absolute top-1/2 left-0 h-[2px] bg-white -translate-y-1/2 z-0 transition-all duration-[1500ms] ease-out"
+            <div className="relative z-10 mb-8 flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-white">Your Learning Journey</span>
+              <span className="rounded-full border border-[#292725] bg-[#141210] px-3 py-1 text-[11px] font-medium text-[#A8A39E]">Interactive preview</span>
+            </div>
+
+            <div className="relative z-10 mb-10 mt-4 flex items-center justify-between px-2">
+              <div className="absolute left-0 top-1/2 z-0 h-[2px] w-full -translate-y-1/2 bg-[#292725]" />
+
+              <div
+                className="absolute left-0 top-1/2 z-0 h-[2px] -translate-y-1/2 bg-white transition-all duration-[1500ms] ease-out"
                 style={{ width: `${progress}%` }}
               >
-                <div className="absolute right-0 top-1/2 w-8 h-[2px] bg-white -translate-y-1/2 blur-[2px] shadow-[0_0_8px_2px_rgba(255,255,255,0.8)]"></div>
+                <div className="absolute right-0 top-1/2 h-[2px] w-8 -translate-y-1/2 bg-white blur-[2px] shadow-[0_0_8px_2px_rgba(255,255,255,0.7)]" />
               </div>
-              
-              {/* Nodes */}
-              {[
-                { label: 'Learn', subtitle: 'Concepts' },
-                { label: 'Practice', subtitle: 'Projects' },
-                { label: 'Build', subtitle: 'Skills' },
-                { label: 'Master', subtitle: 'Career' }
-              ].map((node, i) => {
-                const isReached = nodesReached > i;
+
+              {JOURNEY_NODES.map((node, i) => {
+                const isReached = nodesReached > i
                 return (
                   <div key={node.label} className="relative z-10 flex flex-col items-center">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all duration-700 ease-out delay-[${i * 300}ms] ${isReached ? 'bg-white border-white text-[#050505] shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'bg-[#0A0A0A] border-[#242424] text-transparent'}`}>
+                    <div
+                      style={{ transitionDelay: `${i * 300}ms` }}
+                      className={`flex h-7 w-7 items-center justify-center rounded-full border-2 transition-all duration-700 ease-out ${
+                        isReached
+                          ? 'border-white bg-white text-[#090807] shadow-[0_0_15px_rgba(255,255,255,0.35)]'
+                          : 'border-[#292725] bg-[#0E0D0C] text-transparent'
+                      }`}
+                    >
                       {isReached ? (
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
                       ) : (
-                        <div className="w-2 h-2 rounded-full bg-[#242424]"></div>
+                        <div className="h-2 w-2 rounded-full bg-[#292725]" />
                       )}
                     </div>
-                    <span className={`absolute -bottom-6 text-[11px] font-semibold whitespace-nowrap transition-colors duration-500 ${isReached ? 'text-white' : 'text-[#73706D]'}`}>{node.label}</span>
-                    <span className={`absolute -bottom-10 text-[9px] font-medium whitespace-nowrap transition-colors duration-500 ${isReached ? 'text-[#9CA3AF]' : 'text-[#4B5563]'}`}>{node.subtitle}</span>
+                    <span className={`absolute -bottom-6 whitespace-nowrap text-[11px] font-semibold transition-colors duration-500 ${isReached ? 'text-white' : 'text-[#73706D]'}`}>{node.label}</span>
+                    <span className={`absolute -bottom-10 whitespace-nowrap text-[9px] font-medium transition-colors duration-500 ${isReached ? 'text-[#A8A39E]' : 'text-[#3D3A37]'}`}>{node.subtitle}</span>
                   </div>
                 )
               })}
             </div>
 
-            {/* Tiny Progress Bar */}
-            <div className="mt-14 flex items-center justify-between text-xs font-medium mb-2">
-              <span className="text-[#9A9692]">Progress preview</span>
-              <span className="text-white tabular-nums">{progress}%</span>
+            <div className="relative z-10 mb-2 mt-14 flex items-center justify-between text-xs font-medium">
+              <span className="text-[#A8A39E]">Progress preview</span>
+              <span className="tabular-nums text-white">{progress}%</span>
             </div>
-            <div className="w-full h-1.5 bg-[#242424] rounded-full overflow-hidden">
-              <div className="h-full bg-white transition-all duration-[1500ms] ease-out" style={{ width: `${progress}%` }}></div>
+            <div className="relative z-10 h-1.5 w-full overflow-hidden rounded-full bg-[#292725]">
+              <div className="h-full bg-white transition-all duration-[1500ms] ease-out" style={{ width: `${progress}%` }} />
             </div>
           </div>
 
-          <div className="mt-auto pb-10 text-[13px] text-[#73706D]">
+          <div className="mt-auto pb-10 text-[13px] text-[#3D3A37]">
             © 2026 MasteryPath Inc.
           </div>
         </section>
 
-        {/* Right Column: Signup panel */}
+        {/* Right Column */}
         <section className="flex w-full items-center justify-center px-6 py-10 sm:px-8 lg:w-1/2 lg:px-12">
-          <div className="w-full max-w-[440px]">
+          <div className="w-full max-w-[440px] rounded-2xl border border-[#292725] bg-[#11100F] p-8 sm:p-10 shadow-2xl">
             <div className="mb-9">
               <h1 className="text-[30px] font-bold tracking-[-0.025em] text-white sm:text-[32px]">
                 Create an account
               </h1>
-              <p className="mt-2 text-sm font-medium leading-6 text-[#9A9692] sm:text-[15px]">
+              <p className="mt-2 text-sm font-medium leading-6 text-[#A8A39E] sm:text-[15px]">
                 Start your journey on MasteryPath today.
               </p>
             </div>
 
             {isSuccess ? (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="rounded-xl border border-[#292929] bg-[#111110] p-6 text-center shadow-xl">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#1A2E20] border border-[#27432F]">
-                    <svg className="h-6 w-6 text-[#4ADE80]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="rounded-xl border border-[#292725] bg-[#0E0D0C] p-6 text-center shadow-xl">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-950/40 border border-emerald-500/30">
+                    <svg className="h-6 w-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                   <h3 className="mb-2 text-lg font-semibold text-white">Verify your email</h3>
-                  <p className="text-sm leading-6 text-[#9A9692]">
+                  <p className="text-sm leading-6 text-[#A8A39E]">
                     We sent a verification link to <strong className="text-white">{submittedEmail}</strong>. Click it to activate your account. Check your spam folder if you don't see it.
                   </p>
-                  <Link href="/login" className="mt-6 inline-block w-full rounded-xl border border-[#292929] bg-[#1A1A1A] py-3 text-[15px] font-semibold text-white transition-colors hover:border-[#3A3A3A] hover:bg-[#242424]">
+                  <Link href="/login" className="mt-6 inline-block w-full rounded-xl border border-[#292725] bg-[#141210] py-3 text-[15px] font-semibold text-white transition-colors hover:border-[#3D3A37] hover:bg-[#1C1A18]">
                     Return to login
                   </Link>
                 </div>
@@ -320,13 +309,11 @@ export default function SignUpPage() {
             ) : (
               <>
                 <form onSubmit={handleSubmit} noValidate className="space-y-5">
-                  
-                  {/* Email */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-[#A5A19D]" htmlFor="email">Email</label>
+                    <label className="text-sm font-medium text-[#A8A39E]" htmlFor="email">Email</label>
                     <div className="group relative">
                       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                        <svg className="h-5 w-5 text-[#77736F] transition-colors duration-200 group-focus-within:text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                        <svg className="h-5 w-5 text-[#73706D] transition-colors duration-200 group-focus-within:text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                           <path d="M3 8.5 10.9 13.7a2 2 0 0 0 2.2 0L21 8.5" />
                           <rect x="3" y="5" width="18" height="14" rx="2" />
                         </svg>
@@ -344,9 +331,8 @@ export default function SignUpPage() {
                     </div>
                   </div>
 
-                  {/* Password */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-[#A5A19D]" htmlFor="password">Password</label>
+                    <label className="text-sm font-medium text-[#A8A39E]" htmlFor="password">Password</label>
                     <div className="group relative">
                       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">{lockIcon}</div>
                       <input
@@ -364,23 +350,22 @@ export default function SignUpPage() {
                       </button>
                     </div>
 
-                    {/* Live Validation & Strength */}
                     {password.length > 0 && (
                       <div className="pt-2">
                         <div className="flex items-center justify-between text-[13px] mb-1.5">
-                          <span className="text-[#A5A19D]">Password strength</span>
-                          <span className={`font-medium ${strengthLevel === 1 ? 'text-red-400' : strengthLevel === 2 ? 'text-yellow-400' : 'text-green-400'}`}>{strengthText}</span>
+                          <span className="text-[#A8A39E]">Password strength</span>
+                          <span className={`font-medium ${strengthLevel === 1 ? 'text-red-400' : strengthLevel === 2 ? 'text-amber-400' : 'text-emerald-400'}`}>{strengthText}</span>
                         </div>
                         <div className="flex gap-1.5 h-1 mb-3">
-                          <div className={`flex-1 rounded-full transition-colors ${strengthLevel >= 1 ? (strengthLevel === 1 ? 'bg-red-400' : strengthLevel === 2 ? 'bg-yellow-400' : 'bg-green-400') : 'bg-[#292929]'}`} />
-                          <div className={`flex-1 rounded-full transition-colors ${strengthLevel >= 2 ? (strengthLevel === 2 ? 'bg-yellow-400' : 'bg-green-400') : 'bg-[#292929]'}`} />
-                          <div className={`flex-1 rounded-full transition-colors ${strengthLevel >= 3 ? 'bg-green-400' : 'bg-[#292929]'}`} />
+                          <div className={`flex-1 rounded-full transition-colors ${strengthLevel >= 1 ? (strengthLevel === 1 ? 'bg-red-400' : strengthLevel === 2 ? 'bg-amber-400' : 'bg-emerald-400') : 'bg-[#292725]'}`} />
+                          <div className={`flex-1 rounded-full transition-colors ${strengthLevel >= 2 ? (strengthLevel === 2 ? 'bg-amber-400' : 'bg-emerald-400') : 'bg-[#292725]'}`} />
+                          <div className={`flex-1 rounded-full transition-colors ${strengthLevel >= 3 ? 'bg-emerald-400' : 'bg-[#292725]'}`} />
                         </div>
                         <ul className="space-y-1.5 text-[13px] font-medium">
-                          <li className={`flex items-center gap-2 transition-colors ${hasLength ? 'text-green-400' : 'text-[#73706D]'}`}>
+                          <li className={`flex items-center gap-2 transition-colors ${hasLength ? 'text-emerald-400' : 'text-[#73706D]'}`}>
                              <CheckIcon active={hasLength} /> At least 8 characters
                           </li>
-                          <li className={`flex items-center gap-2 transition-colors ${hasLetterAndNumber ? 'text-green-400' : 'text-[#73706D]'}`}>
+                          <li className={`flex items-center gap-2 transition-colors ${hasLetterAndNumber ? 'text-emerald-400' : 'text-[#73706D]'}`}>
                              <CheckIcon active={hasLetterAndNumber} /> Contains a letter and a number
                           </li>
                         </ul>
@@ -388,9 +373,8 @@ export default function SignUpPage() {
                     )}
                   </div>
 
-                  {/* Confirm password */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-[#A5A19D]" htmlFor="confirmPassword">Confirm password</label>
+                    <label className="text-sm font-medium text-[#A8A39E]" htmlFor="confirmPassword">Confirm password</label>
                     <div className="group relative">
                       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">{lockIcon}</div>
                       <input
@@ -408,7 +392,7 @@ export default function SignUpPage() {
                       </button>
                     </div>
                     {confirmPassword.length > 0 && (
-                      <div className={`flex items-center gap-2 text-[13px] font-medium pt-1 transition-colors ${passwordsMatch ? 'text-green-400' : 'text-red-400'}`}>
+                      <div className={`flex items-center gap-2 text-[13px] font-medium pt-1 transition-colors ${passwordsMatch ? 'text-emerald-400' : 'text-red-400'}`}>
                         {passwordsMatch ? (
                           <><CheckIcon active={true} /> Passwords match</>
                         ) : (
@@ -419,7 +403,7 @@ export default function SignUpPage() {
                   </div>
 
                   {error && (
-                    <div role="alert" className="rounded-lg border border-[#5A3434] bg-[#2A1717] px-3.5 py-3 text-sm leading-5 text-[#E7B8B8] flex items-center gap-3">
+                    <div role="alert" className="rounded-lg border border-red-500/30 bg-red-950/40 px-4 py-3 text-sm leading-5 text-red-300 flex items-center gap-3">
                       <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                       {error}
                     </div>
@@ -429,7 +413,7 @@ export default function SignUpPage() {
                     <button
                       type="submit"
                       disabled={isLoading || isGoogleLoading}
-                      className="group flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-white text-[15px] font-semibold tracking-wide text-[#090909] outline-none transition-all duration-200 hover:-translate-y-[1px] hover:bg-[#F1F1F1] hover:shadow-[0_8px_25px_rgba(255,255,255,0.15)] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#090909] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                      className="group flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-white text-[15px] font-semibold tracking-wide text-[#090807] outline-none transition-all duration-200 hover:-translate-y-[1px] hover:bg-[#E5E5E5] hover:shadow-[0_8px_25px_rgba(255,255,255,0.2)] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#11100F] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none"
                     >
                       {isLoading ? (
                         <>
@@ -444,22 +428,22 @@ export default function SignUpPage() {
                       )}
                     </button>
                     <p className="mt-4 text-center text-xs text-[#73706D] font-medium">
-                      By signing up, you agree to our <a href="#" className="underline decoration-[#3A3A3A] underline-offset-4 hover:text-white transition-colors">Terms of Service</a> and <a href="#" className="underline decoration-[#3A3A3A] underline-offset-4 hover:text-white transition-colors">Privacy Policy</a>.
+                      By signing up, you agree to our <a href="#" className="underline decoration-[#3D3A37] underline-offset-4 hover:text-white transition-colors">Terms of Service</a> and <a href="#" className="underline decoration-[#3D3A37] underline-offset-4 hover:text-white transition-colors">Privacy Policy</a>.
                     </p>
                   </div>
                 </form>
 
                 <div className="my-8 flex items-center gap-4">
-                  <div className="h-px flex-1 bg-[#292929]" />
+                  <div className="h-px flex-1 bg-[#292725]" />
                   <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#73706D]">or</span>
-                  <div className="h-px flex-1 bg-[#292929]" />
+                  <div className="h-px flex-1 bg-[#292725]" />
                 </div>
 
                 <button
                   type="button"
                   onClick={handleGoogleSignup}
                   disabled={isLoading || isGoogleLoading}
-                  className="flex h-[52px] w-full items-center justify-center gap-3 rounded-xl border border-[#292929] bg-[#111110] text-[15px] font-medium text-white outline-none transition-all duration-200 hover:border-[#3D3D3D] hover:bg-[#181817] focus-visible:ring-2 focus-visible:ring-white/50 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="flex h-[52px] w-full items-center justify-center gap-3 rounded-xl border border-[#292725] bg-[#0E0D0C] text-[15px] font-medium text-[#A8A39E] outline-none transition-all duration-200 hover:border-[#3D3A37] hover:bg-[#141210] hover:text-white focus-visible:ring-2 focus-visible:ring-white/50 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isGoogleLoading ? (
                     <>
@@ -479,9 +463,9 @@ export default function SignUpPage() {
                   )}
                 </button>
 
-                <p className="mt-8 text-center text-sm font-medium text-[#8C8985]">
+                <p className="mt-8 text-center text-sm font-medium text-[#73706D]">
                   Already have an account?{' '}
-                  <Link href="/login" className="text-white underline decoration-[#3A3A3A] underline-offset-4 transition-colors hover:text-[#C7C9CC] hover:decoration-[#777B80] focus-visible:text-white focus-visible:outline-none">
+                  <Link href="/login" className="text-white underline decoration-[#3D3A37] underline-offset-4 transition-colors hover:text-white hover:decoration-white focus-visible:text-white focus-visible:outline-none">
                     Sign in
                   </Link>
                 </p>

@@ -9,45 +9,72 @@ interface SubmissionModalProps {
   nodeData: any
 }
 
+// Loose typing to prevent breaking if Anshika tweaks field names
+type ConceptualEvaluationResponse = {
+  verdict: 'PASS' | 'FAIL' | 'PARTIAL' | string
+  conceptual_score?: number
+  conceptualScore?: number
+  strengths?: string[]
+  mistakes?: string[]
+  missing_concepts?: string[]
+  missingConcepts?: string[]
+  feedback: string
+  next_step?: string
+  nextStep?: string
+  [key: string]: any
+}
+
 export default function SubmissionModal({
   isOpen,
   onClose,
   nodeId,
   nodeData,
 }: SubmissionModalProps) {
-  const [codeSolution, setCodeSolution] = useState<string>('')
+  const [rationale, setRationale] = useState<string>('')
   const [submitting, setSubmitting] = useState<boolean>(false)
-  const [submissionResult, setSubmissionResult] = useState<any | null>(null)
+  const [evaluationResult, setEvaluationResult] = useState<ConceptualEvaluationResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  
+  const [attempts, setAttempts] = useState<number>(0)
 
   if (!isOpen) return null
 
-  const handleSubmitCheckpoint = async (e: React.FormEvent) => {
+  const handleSubmitEvaluation = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!rationale.trim()) {
+      setError('Please explain your approach before submitting.')
+      return
+    }
+
     setSubmitting(true)
     setError(null)
-    setSubmissionResult(null)
+    setEvaluationResult(null)
+    
+    const currentAttempt = attempts + 1
+    setAttempts(currentAttempt)
 
     try {
-      const response = await fetch('/api/checkpoints/submit', {
+      // Step 7: Calling the new conceptual evaluator endpoint
+      const response = await fetch('/api/evaluate-answer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nodeId,
           topic: nodeData?.label,
-          solution: codeSolution,
+          explanation: rationale,
+          attempts: currentAttempt,
         }),
       })
 
       if (!response.ok) {
-        throw new Error(`Submission failed with status ${response.status}`)
+        throw new Error(`Evaluation failed with status ${response.status}`)
       }
 
       const data = await response.json()
-      setSubmissionResult(data)
+      setEvaluationResult(data)
     } catch (err: any) {
       setError(
-        err.message || 'An error occurred while evaluating your checkpoint.'
+        err.message || 'An error occurred while evaluating your conceptual understanding.'
       )
     } finally {
       setSubmitting(false)
@@ -57,7 +84,9 @@ export default function SubmissionModal({
   const handleClose = () => {
     if (!submitting) {
       setError(null)
-      setSubmissionResult(null)
+      setEvaluationResult(null)
+      setRationale('')
+      setAttempts(0)
       onClose()
     }
   }
@@ -74,10 +103,10 @@ export default function SubmissionModal({
         <div className="flex items-center justify-between border-b border-[#292725] px-6 py-4 bg-[#090807]">
           <div>
             <span className="text-[10px] font-semibold uppercase tracking-wider text-[#A78BFA]">
-              {nodeData?.category || 'Checkpoint Evaluation'}
+              {nodeData?.category || 'Conceptual Checkpoint'}
             </span>
             <h2 id="checkpoint-title" className="text-lg font-bold text-white">
-              {nodeData?.label || 'Topic Checkpoint'}
+              {nodeData?.label || 'Topic Evaluation'}
             </h2>
           </div>
           <button
@@ -92,74 +121,117 @@ export default function SubmissionModal({
 
         {/* Split-Pane Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 flex-1 overflow-y-auto">
-          {/* Left Side: Honest Checkpoint Context & Instructions */}
+          {/* Left Side: Context & Verdict Card */}
           <div className="p-6 border-b md:border-b-0 md:border-r border-[#292725] space-y-4 bg-[#0D0C0B]">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#9A9692]">
-              Checkpoint Assessment
-            </h3>
-            <div className="rounded-xl border border-[#292725] bg-[#11100F] p-4 text-sm text-[#D0D0D0] space-y-3 font-sans">
-              <p className="font-semibold text-white">
-                Demonstrate your structural understanding of{' '}
-                {nodeData?.label || 'this topic'}.
-              </p>
-              <p className="text-xs leading-relaxed text-[#9A9692]">
-                Provide your core algorithm implementation or conceptual explanation.
-                Submissions are validated against rubric criteria via the checkpoint
-                assessment service to verify foundational comprehension rather than
-                simple output matching.
-              </p>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#9A9692]">
+                Conceptual Assessment
+              </h3>
+              {attempts > 0 && (
+                <span className="text-[10px] font-mono text-[#73706D]">Attempt {attempts}</span>
+              )}
             </div>
-
-            {submissionResult && (
+            
+            {!evaluationResult ? (
+              <div className="rounded-xl border border-[#292725] bg-[#11100F] p-4 text-sm text-[#D0D0D0] space-y-3 font-sans">
+                <p className="font-semibold text-white">
+                  Explain the core mechanism behind {nodeData?.label || 'this topic'}.
+                </p>
+                <p className="text-xs leading-relaxed text-[#9A9692]">
+                  Your explanation will be evaluated by the AI engine to verify foundational comprehension rather than just checking code output. Do not paste code—explain the rationale.
+                </p>
+              </div>
+            ) : (
+              // The Dedicated Verdict Card
               <div
-                className={`rounded-xl p-4 border text-sm space-y-2 animate-in fade-in ${
-                  submissionResult.success || submissionResult.passed
-                    ? 'border-emerald-500/40 bg-emerald-950/20 text-emerald-300'
-                    : 'border-red-500/40 bg-red-950/20 text-red-300'
+                className={`rounded-xl border p-5 text-sm space-y-4 animate-in fade-in slide-in-from-bottom-2 ${
+                  evaluationResult.verdict === 'PASS'
+                    ? 'border-emerald-500/40 bg-emerald-950/20'
+                    : evaluationResult.verdict === 'PARTIAL'
+                    ? 'border-amber-500/40 bg-amber-950/20'
+                    : 'border-red-500/40 bg-red-950/20'
                 }`}
                 role="status"
               >
-                <div className="font-semibold flex items-center gap-2">
-                  <span>
-                    {submissionResult.success || submissionResult.passed
-                      ? '✓ Checkpoint Passed'
-                      : '✕ Further Practice Needed'}
-                  </span>
+                <div className="flex items-center justify-between border-b border-[#292725] pb-3">
+                  <div className="font-semibold text-white flex items-center gap-2">
+                    {evaluationResult.verdict === 'PASS' && <span className="text-emerald-400">✓ Concept Mastered</span>}
+                    {evaluationResult.verdict === 'PARTIAL' && <span className="text-amber-400">⚠ Partial Understanding</span>}
+                    {evaluationResult.verdict === 'FAIL' && <span className="text-red-400">✕ Conceptual Gap Detected</span>}
+                  </div>
+                  <div className="text-xs font-mono text-[#A8A39E]">
+                    Score: {evaluationResult.conceptual_score ?? evaluationResult.conceptualScore ?? '--'}/100
+                  </div>
                 </div>
-                <p className="text-xs font-sans text-[#D0D0D0] leading-relaxed">
-                  {submissionResult.feedback ||
-                    submissionResult.message ||
-                    'Your submission has been evaluated and recorded.'}
-                </p>
+
+                <div className="space-y-3">
+                  <p className="text-sm text-[#D0D0D0] leading-relaxed">
+                    {evaluationResult.feedback}
+                  </p>
+
+                  {/* Dynamic Strengths & Weaknesses Arrays */}
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    {evaluationResult.strengths && evaluationResult.strengths.length > 0 && (
+                      <div>
+                        <h4 className="text-[10px] uppercase tracking-wider text-emerald-400/80 mb-1">Strengths</h4>
+                        <ul className="list-disc list-inside text-xs text-[#9A9692] space-y-1">
+                          {evaluationResult.strengths.map((s, i) => <li key={i} className="truncate">{s}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {(evaluationResult.mistakes || evaluationResult.missing_concepts || evaluationResult.missingConcepts) && (
+                      <div>
+                        <h4 className="text-[10px] uppercase tracking-wider text-red-400/80 mb-1">Missing Concepts</h4>
+                        <ul className="list-disc list-inside text-xs text-[#9A9692] space-y-1">
+                          {(evaluationResult.mistakes || evaluationResult.missing_concepts || evaluationResult.missingConcepts || []).map((m, i) => (
+                            <li key={i} className="truncate">{m}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {(evaluationResult.next_step || evaluationResult.nextStep) && (
+                    <div className="pt-3 border-t border-[#292725]/50 mt-2">
+                      <p className="text-xs text-[#A8A39E]">
+                        <span className="font-semibold text-white">Next Step:</span> {evaluationResult.next_step || evaluationResult.nextStep}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
-          {/* Right Side: Code Editor & Submit Action */}
+          {/* Right Side: Rationale Input & Submit */}
           <form
-            onSubmit={handleSubmitCheckpoint}
+            onSubmit={handleSubmitEvaluation}
             className="p-6 flex flex-col justify-between space-y-4"
           >
             <div className="space-y-2 flex-1 flex flex-col">
               <label
                 className="text-xs font-semibold uppercase tracking-wider text-[#9A9692]"
-                htmlFor="code-input"
+                htmlFor="rationale-input"
               >
-                Your Code Solution / Explanation
+                Explain your approach
               </label>
               <textarea
-                id="code-input"
+                id="rationale-input"
                 rows={10}
-                value={codeSolution}
-                onChange={(e) => setCodeSolution(e.target.value)}
+                value={rationale}
+                onChange={(e) => setRationale(e.target.value)}
                 disabled={submitting}
-                placeholder="Write your approach or paste your solution here..."
+                placeholder="In plain English, explain how this pattern works and why it is efficient..."
                 className="flex-1 w-full rounded-xl border border-[#292725] bg-[#090807] p-4 font-mono text-sm text-white outline-none focus:border-[#A78BFA] transition-all resize-none placeholder:text-[#55524F] disabled:opacity-50"
-                required
               />
             </div>
 
-            {error && <p className="text-xs text-red-400">{error}</p>}
+            {error && (
+              <div className="rounded-lg border border-red-500/30 bg-red-950/20 px-3 py-2 text-xs text-red-400">
+                {error}
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-3 pt-2 border-t border-[#292725]">
               <button
@@ -172,31 +244,16 @@ export default function SubmissionModal({
               </button>
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !rationale.trim()}
                 className="h-10 px-6 rounded-xl bg-white text-[#090807] text-sm font-semibold hover:bg-[#E5E5E5] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
               >
                 {submitting && (
-                  <svg
-                    className="w-4 h-4 animate-spin"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
+                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
                 )}
-                {submitting ? 'Evaluating checkpoint...' : 'Submit Checkpoint'}
+                {submitting ? 'Evaluating rationale...' : 'Submit Explanation'}
               </button>
             </div>
           </form>

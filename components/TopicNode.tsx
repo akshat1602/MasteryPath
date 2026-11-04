@@ -78,15 +78,19 @@ function TopicNode({ data, selected }: NodeProps) {
       onClick={handleOpenPractice}
       className={`group relative min-w-[230px] rounded-2xl border bg-[#0E0D0C] p-4 text-left shadow-xl transition-all duration-300 cursor-pointer ${
         statusConfig.border
-      } ${selected ? 'ring-2 ring-orange-400 ring-offset-2 ring-offset-[#070706]' : ''}`}
+      } ${selected ? 'ring-2 ring-[#A78BFA] ring-offset-2 ring-offset-[#070706]' : ''}`}
     >
       <Handle
         type="target"
         position={Position.Top}
-        className="!h-2.5 !w-2.5 !border-2 !border-[#0E0D0C] !bg-[#73706D] transition-colors group-hover:!bg-orange-400"
+        className={`!h-2.5 !w-2.5 !border-2 !border-[#0E0D0C] !bg-[#73706D] transition-colors ${
+          status === 'mastered' ? 'group-hover:!bg-emerald-400' :
+          status === 'decaying' ? 'group-hover:!bg-red-400' :
+          status === 'ready' ? 'group-hover:!bg-orange-400' : ''
+        }`}
       />
 
-      {/* Top Ambient Orange Glow */}
+      {/* Top Ambient Glow */}
       <div
         className={`pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-2xl bg-gradient-to-b ${statusConfig.glow} opacity-70 transition-opacity group-hover:opacity-100`}
       />
@@ -105,7 +109,7 @@ function TopicNode({ data, selected }: NodeProps) {
         </div>
 
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-bold tracking-tight text-white group-hover:text-orange-300 transition-colors">
+          <h3 className={`text-sm font-bold tracking-tight text-white transition-colors group-hover:${statusConfig.accentText}`}>
             {nodeData.label}
           </h3>
           <span className="text-xs text-[#9A9692] group-hover:text-white transition-colors">
@@ -113,20 +117,31 @@ function TopicNode({ data, selected }: NodeProps) {
           </span>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-[#1C1A18] text-[10px] text-[#9A9692]">
+       <div className="flex items-center justify-between pt-2 border-t border-[#1C1A18] text-[10px] text-[#9A9692]">
           <span>
             Retention: <strong className="font-mono text-white">{nodeData.retention ?? 70}%</strong>
           </span>
-          <span className="font-medium text-orange-400 underline underline-offset-2">
-            Practice
-          </span>
+          {/* Transfer Gap Indicator Module */}
+          {nodeData.transferGap !== undefined ? (
+            <span className={`font-mono font-medium tracking-wide ${nodeData.transferGap > 20 ? 'text-amber-400 animate-pulse' : 'text-[#A78BFA]'}`}>
+              Δ {nodeData.transferGap}% gap
+            </span>
+          ) : (
+            <span className="font-medium text-orange-400 hover:text-white transition-colors cursor-pointer underline underline-offset-2">
+              Practice
+            </span>
+          )}
         </div>
       </div>
 
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!h-2.5 !w-2.5 !border-2 !border-[#0E0D0C] !bg-[#73706D] transition-colors group-hover:!bg-orange-400"
+        className={`!h-2.5 !w-2.5 !border-2 !border-[#0E0D0C] !bg-[#73706D] transition-colors ${
+          status === 'mastered' ? 'group-hover:!bg-emerald-400' :
+          status === 'decaying' ? 'group-hover:!bg-red-400' :
+          status === 'ready' ? 'group-hover:!bg-orange-400' : ''
+        }`}
       />
     </div>
   )

@@ -1,4 +1,3 @@
-
 export type DSAPattern =
   | "Sliding Window"
   | "Two Pointers"
@@ -13,7 +12,7 @@ export type DSAPattern =
 export type Difficulty = "Easy" | "Medium" | "Hard";
 
 export type ProblemType =
-  // Existing templates
+  // Sliding Window / Two Pointers (existing templates)
   | "longest-subarray-target-sum"
   | "maximum-fixed-window-sum"
   | "minimum-fixed-window-average"
@@ -47,6 +46,8 @@ export type ProblemType =
   | "lower-bound"
 
   // Sorting
+  | "bubble-sort"
+  | "selection-sort"
   | "merge-sorted-arrays"
   | "sort-colors"
   | "merge-sort"
@@ -54,14 +55,7 @@ export type ProblemType =
   // Prefix Sums and Difference Arrays
   | "range-sum-query"
   | "equilibrium-index"
-  | "range-update-queries"
-
-  // Sorting
-    | "bubble-sort"
-  | "selection-sort"
-  | "merge-sorted-arrays"
-  | "sort-colors"
-  | "merge-sort";
+  | "range-update-queries";
 
 export interface GenerateProblemRequest {
   pattern: DSAPattern;
@@ -88,5 +82,7 @@ export interface GeneratedProblem {
   examples: GeneratedExample[];
   patternReasoning: string;
   expectedApproach: string;
+  // WARNING: these reach the browser today. Hidden tests must move
+  // server-side (Step 4). Don't render them in the UI.
   testCases: GeneratedTestCase[];
 }

@@ -33,7 +33,7 @@ const JOURNEY_NODES = [
 ]
 
 const INPUT_CLASS =
-  'h-[52px] w-full rounded-xl border border-earth-bone/15 bg-input pl-11 text-[15px] text-earth-floral outline-none placeholder:text-earth-bone/40 transition-all duration-200 hover:border-earth-bone/30 focus:border-accent focus:ring-1 focus:ring-accent'
+  'h-[52px] w-full rounded-xl border border-[#292725] bg-[#090807] pl-11 text-[15px] text-white outline-none placeholder:text-[#73706D] transition-all duration-200 hover:border-[#3D3A37] focus:border-white focus:ring-1 focus:ring-white'
 
 export default function LoginPage() {
   const supabase = createClient()
@@ -148,57 +148,53 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="card-entrance relative min-h-screen w-full overflow-hidden bg-background text-earth-floral">
-
-      {/* Ambient details: faint grid, soft olive glows, floating dots */}
+    <main className="card-entrance relative min-h-screen w-full overflow-hidden bg-[#090807] text-white">
+      {/* Ambient details: floating dots ONLY, no grid lines */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#E3DAC908_1px,transparent_1px),linear-gradient(to_bottom,#E3DAC908_1px,transparent_1px)] bg-[size:32px_32px]" />
-        <div className="absolute -left-32 top-[10%] h-[500px] w-[500px] rounded-full bg-earth-olive/10 blur-[120px]" />
-        <div className="absolute -right-32 bottom-[10%] h-[500px] w-[500px] rounded-full bg-accent/[0.06] blur-[120px]" />
+        <div className="absolute -left-32 top-[10%] h-[500px] w-[500px] rounded-full bg-white/[0.02] blur-[120px]" />
+        <div className="absolute -right-32 bottom-[10%] h-[500px] w-[500px] rounded-full bg-white/[0.02] blur-[120px]" />
 
-        <div className="absolute left-[12%] top-[25%] h-1.5 w-1.5 animate-pulse rounded-full bg-accent/30" />
-        <div className="absolute bottom-[20%] left-[35%] h-2 w-2 animate-pulse rounded-full bg-earth-bone/10 delay-700" />
-        <div className="absolute right-[55%] top-[50%] h-1 w-1 animate-pulse rounded-full bg-accent/40 delay-1000" />
+        <div className="absolute left-[12%] top-[25%] h-1.5 w-1.5 animate-pulse rounded-full bg-white/30" />
+        <div className="absolute bottom-[20%] left-[35%] h-2 w-2 animate-pulse rounded-full bg-white/10 delay-700" />
+        <div className="absolute right-[55%] top-[50%] h-1 w-1 animate-pulse rounded-full bg-white/40 delay-1000" />
       </div>
 
       <div className="relative z-10 flex min-h-screen w-full">
         {/* Left Column: Branding & Animated Learning Path Preview */}
-        <section className="hidden w-1/2 flex-col border-r border-earth-bone/10 bg-background/60 px-16 pt-[12vh] backdrop-blur-md lg:flex">
-
+        <section className="hidden w-1/2 flex-col border-r border-[#292725] bg-[#090807]/60 px-16 pt-[12vh] backdrop-blur-md lg:flex">
           <div className="mb-14">
             <Logo />
           </div>
 
           <div className="mb-12 max-w-xl">
-            <h2 className="text-4xl font-bold leading-[1.12] tracking-[-0.03em] text-earth-floral xl:text-[44px]">
+            <h2 className="text-4xl font-bold leading-[1.12] tracking-[-0.03em] text-white xl:text-[44px]">
               Learn. Build. Master.
             </h2>
-            <p className="mt-4 max-w-lg text-base font-medium leading-7 text-earth-bone/70 xl:text-lg">
+            <p className="mt-4 max-w-lg text-base font-medium leading-7 text-[#A8A39E] xl:text-lg">
               Turn what you learn into skills you can actually use.
             </p>
           </div>
 
-          {/* Animated Learning Path Card */}
-          <div className="relative w-full max-w-[420px] overflow-hidden rounded-2xl border border-earth-bone/10 bg-surface p-6 shadow-2xl">
-            <div className="mb-8 flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-earth-floral">Your Learning Journey</span>
-              <span className="rounded-full border border-earth-bone/10 bg-background px-3 py-1 text-[11px] font-medium text-earth-bone/70">Interactive preview</span>
+          {/* Animated Learning Path Card - Matched to Dashboard Materials UI */}
+          <div className="relative w-full max-w-[420px] overflow-hidden rounded-2xl border border-[#242220] bg-[#0E0D0C] p-6 shadow-xl">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent" />
+            
+            <div className="relative z-10 mb-8 flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-white">Your Learning Journey</span>
+              <span className="rounded-full border border-[#292725] bg-[#141210] px-3 py-1 text-[11px] font-medium text-[#A8A39E]">Interactive preview</span>
             </div>
 
             {/* Connected Nodes Animation */}
-            <div className="relative mb-10 mt-4 flex items-center justify-between px-2">
-              {/* Static background path */}
-              <div className="absolute left-0 top-1/2 z-0 h-[2px] w-full -translate-y-1/2 bg-earth-bone/10" />
+            <div className="relative z-10 mb-10 mt-4 flex items-center justify-between px-2">
+              <div className="absolute left-0 top-1/2 z-0 h-[2px] w-full -translate-y-1/2 bg-[#292725]" />
 
-              {/* Traveling progress path */}
               <div
-                className="absolute left-0 top-1/2 z-0 h-[2px] -translate-y-1/2 bg-accent transition-all duration-[1500ms] ease-out"
+                className="absolute left-0 top-1/2 z-0 h-[2px] -translate-y-1/2 bg-white transition-all duration-[1500ms] ease-out"
                 style={{ width: `${progress}%` }}
               >
-                <div className="absolute right-0 top-1/2 h-[2px] w-8 -translate-y-1/2 bg-accent blur-[2px] shadow-[0_0_8px_2px_rgba(143,188,143,0.7)]" />
+                <div className="absolute right-0 top-1/2 h-[2px] w-8 -translate-y-1/2 bg-white blur-[2px] shadow-[0_0_8px_2px_rgba(255,255,255,0.7)]" />
               </div>
 
-              {/* Nodes */}
               {JOURNEY_NODES.map((node, i) => {
                 const isReached = nodesReached > i
                 return (
@@ -207,72 +203,70 @@ export default function LoginPage() {
                       style={{ transitionDelay: `${i * 300}ms` }}
                       className={`flex h-7 w-7 items-center justify-center rounded-full border-2 transition-all duration-700 ease-out ${
                         isReached
-                          ? 'border-accent bg-accent text-earth-smoky shadow-[0_0_15px_rgba(143,188,143,0.35)]'
-                          : 'border-earth-bone/10 bg-surface text-transparent'
+                          ? 'border-white bg-white text-[#090807] shadow-[0_0_15px_rgba(255,255,255,0.35)]'
+                          : 'border-[#292725] bg-[#0E0D0C] text-transparent'
                       }`}
                     >
                       {isReached ? (
                         <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
                       ) : (
-                        <div className="h-2 w-2 rounded-full bg-earth-bone/15" />
+                        <div className="h-2 w-2 rounded-full bg-[#292725]" />
                       )}
                     </div>
-                    <span className={`absolute -bottom-6 whitespace-nowrap text-[11px] font-semibold transition-colors duration-500 ${isReached ? 'text-earth-floral' : 'text-earth-bone/40'}`}>{node.label}</span>
-                    <span className={`absolute -bottom-10 whitespace-nowrap text-[9px] font-medium transition-colors duration-500 ${isReached ? 'text-earth-bone/70' : 'text-earth-bone/30'}`}>{node.subtitle}</span>
+                    <span className={`absolute -bottom-6 whitespace-nowrap text-[11px] font-semibold transition-colors duration-500 ${isReached ? 'text-white' : 'text-[#73706D]'}`}>{node.label}</span>
+                    <span className={`absolute -bottom-10 whitespace-nowrap text-[9px] font-medium transition-colors duration-500 ${isReached ? 'text-[#A8A39E]' : 'text-[#3D3A37]'}`}>{node.subtitle}</span>
                   </div>
                 )
               })}
             </div>
 
             {/* Progress Bar */}
-            <div className="mb-2 mt-14 flex items-center justify-between text-xs font-medium">
-              <span className="text-earth-bone/70">Progress preview</span>
-              <span className="tabular-nums text-earth-floral">{progress}%</span>
+            <div className="relative z-10 mb-2 mt-14 flex items-center justify-between text-xs font-medium">
+              <span className="text-[#A8A39E]">Progress preview</span>
+              <span className="tabular-nums text-white">{progress}%</span>
             </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-earth-bone/10">
-              <div className="h-full bg-accent transition-all duration-[1500ms] ease-out" style={{ width: `${progress}%` }} />
+            <div className="relative z-10 h-1.5 w-full overflow-hidden rounded-full bg-[#292725]">
+              <div className="h-full bg-white transition-all duration-[1500ms] ease-out" style={{ width: `${progress}%` }} />
             </div>
           </div>
 
-          <div className="mt-auto pb-10 text-[13px] text-earth-bone/40">
+          <div className="mt-auto pb-10 text-[13px] text-[#3D3A37]">
             © 2026 MasteryPath Inc.
           </div>
         </section>
 
-        {/* Right Column: Form */}
+        {/* Right Column: Form Wrapped in Dashboard Card */}
         <section className="flex w-full items-center justify-center px-6 py-10 sm:px-8 lg:w-1/2 lg:px-12">
-          <div className="w-full max-w-[440px]">
-
+          <div className="w-full max-w-[440px] rounded-2xl border border-[#292725] bg-[#11100F] p-8 sm:p-10 shadow-2xl">
             <div className="mb-9">
-              <h1 className="text-[30px] font-bold tracking-[-0.025em] text-earth-floral sm:text-[32px]">
+              <h1 className="text-[30px] font-bold tracking-[-0.025em] text-white sm:text-[32px]">
                 Welcome back
               </h1>
-              <p className="mt-2 text-sm font-medium leading-6 text-earth-bone/70 sm:text-[15px]">
+              <p className="mt-2 text-sm font-medium leading-6 text-[#A8A39E] sm:text-[15px]">
                 Unlock the next step on your MasteryPath.
               </p>
             </div>
 
             {/* Error & Success Messages */}
             {error && (
-              <div id="login-error" role="alert" className="mb-6 flex items-center gap-3 rounded-lg border border-[#5A3434] bg-[#2A1717] px-4 py-3 text-sm leading-5 text-[#E7B8B8]">
+              <div id="login-error" role="alert" className="mb-6 flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-950/40 px-4 py-3 text-sm leading-5 text-red-300">
                 <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 {error}
               </div>
             )}
             {success && (
-              <div role="status" className="mb-6 flex items-center gap-3 rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 text-sm leading-5 text-accent">
+              <div role="status" className="mb-6 flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-950/40 px-4 py-3 text-sm leading-5 text-emerald-300">
                 <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
                 {success}
               </div>
             )}
 
             <form onSubmit={handleSubmit} noValidate className="space-y-5">
-
               <div className="space-y-2">
-                <label className="text-sm font-medium text-earth-bone/80" htmlFor="email">Email</label>
+                <label className="text-sm font-medium text-[#A8A39E]" htmlFor="email">Email</label>
                 <div className="group relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                    <svg className="h-5 w-5 text-earth-bone/50 transition-colors duration-200 group-focus-within:text-accent" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg className="h-5 w-5 text-[#73706D] transition-colors duration-200 group-focus-within:text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M3 8.5 10.9 13.7a2 2 0 0 0 2.2 0L21 8.5" />
                       <rect x="3" y="5" width="18" height="14" rx="2" />
                     </svg>
@@ -297,10 +291,10 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-earth-bone/80" htmlFor="password">Password</label>
+                <label className="text-sm font-medium text-[#A8A39E]" htmlFor="password">Password</label>
                 <div className="group relative">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                    <svg className="h-5 w-5 text-earth-bone/50 transition-colors duration-200 group-focus-within:text-accent" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg className="h-5 w-5 text-[#73706D] transition-colors duration-200 group-focus-within:text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden="true">
                       <rect x="4" y="10" width="16" height="11" rx="2" />
                       <path d="M8 10V7a4 4 0 0 1 8 0v3" />
                       <path d="M12 14v3" />
@@ -325,7 +319,7 @@ export default function LoginPage() {
                     type="button"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                     onClick={() => setShowPassword((value) => !value)}
-                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-earth-bone/50 outline-none transition-colors hover:text-earth-floral focus-visible:text-accent"
+                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-[#73706D] outline-none transition-colors hover:text-white focus-visible:text-white"
                   >
                     {showPassword ? (
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden="true">
@@ -348,7 +342,7 @@ export default function LoginPage() {
               <div className="flex items-center justify-end py-1 text-sm">
                 <Link
                   href="/forgot-password"
-                  className="-mr-2 rounded-lg p-2 font-medium text-earth-bone/70 transition-colors hover:bg-earth-bone/5 hover:text-accent focus-visible:text-accent focus-visible:outline-none"
+                  className="-mr-2 rounded-lg p-2 font-medium text-[#A8A39E] transition-colors hover:bg-[#1A1816] hover:text-white focus-visible:text-white focus-visible:outline-none"
                 >
                   Forgot password?
                 </Link>
@@ -359,7 +353,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={handleResend}
                   disabled={isResending || cooldown > 0}
-                  className="flex h-11 w-full items-center justify-center rounded-xl border border-earth-bone/15 bg-surface text-sm font-medium text-earth-floral outline-none transition-all duration-200 hover:border-earth-bone/30 hover:bg-earth-bone/5 focus-visible:ring-2 focus-visible:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex h-11 w-full items-center justify-center rounded-xl border border-[#292725] bg-[#0E0D0C] text-sm font-medium text-[#A8A39E] outline-none transition-all duration-200 hover:border-[#3D3A37] hover:bg-[#141210] hover:text-white focus-visible:ring-2 focus-visible:ring-white/50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isResending ? 'Sending...' : cooldown > 0 ? `Resend available in ${cooldown}s` : 'Resend confirmation email'}
                 </button>
@@ -369,7 +363,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading || isGoogleLoading}
-                className="group flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-earth-floral text-[15px] font-semibold tracking-wide text-earth-smoky outline-none transition-all duration-200 hover:-translate-y-[1px] hover:bg-earth-bone hover:shadow-[0_8px_25px_rgba(143,188,143,0.25)] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                className="group flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-white text-[15px] font-semibold tracking-wide text-[#090807] outline-none transition-all duration-200 hover:-translate-y-[1px] hover:bg-[#E5E5E5] hover:shadow-[0_8px_25px_rgba(255,255,255,0.2)] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#11100F] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none"
               >
                 {isLoading ? (
                   <>
@@ -389,9 +383,9 @@ export default function LoginPage() {
             </form>
 
             <div className="my-8 flex items-center gap-4">
-              <div className="h-px flex-1 bg-earth-bone/10" />
-              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-earth-bone/40">or</span>
-              <div className="h-px flex-1 bg-earth-bone/10" />
+              <div className="h-px flex-1 bg-[#292725]" />
+              <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#73706D]">or</span>
+              <div className="h-px flex-1 bg-[#292725]" />
             </div>
 
             {/* Google Sign-in */}
@@ -399,7 +393,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={isLoading || isGoogleLoading}
-              className="flex h-[52px] w-full items-center justify-center gap-3 rounded-xl border border-earth-bone/15 bg-surface text-[15px] font-medium text-earth-floral outline-none transition-all duration-200 hover:border-earth-bone/30 hover:bg-earth-bone/5 focus-visible:ring-2 focus-visible:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex h-[52px] w-full items-center justify-center gap-3 rounded-xl border border-[#292725] bg-[#0E0D0C] text-[15px] font-medium text-[#A8A39E] outline-none transition-all duration-200 hover:border-[#3D3A37] hover:bg-[#141210] hover:text-white focus-visible:ring-2 focus-visible:ring-white/50 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isGoogleLoading ? (
                 <>
@@ -422,11 +416,11 @@ export default function LoginPage() {
               )}
             </button>
 
-            <p className="mt-8 text-center text-sm font-medium text-earth-bone/60">
+            <p className="mt-8 text-center text-sm font-medium text-[#73706D]">
               Don&apos;t have an account?{' '}
               <Link
                 href="/signup"
-                className="text-earth-floral underline decoration-earth-bone/30 underline-offset-4 transition-colors hover:text-accent hover:decoration-accent focus-visible:text-accent focus-visible:outline-none"
+                className="text-white underline decoration-[#3D3A37] underline-offset-4 transition-colors hover:text-white hover:decoration-white focus-visible:text-white focus-visible:outline-none"
               >
                 Sign up
               </Link>
