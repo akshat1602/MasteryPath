@@ -34,7 +34,7 @@ export default function SubmissionModal({
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [evaluationResult, setEvaluationResult] = useState<ConceptualEvaluationResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
-  
+
   const [attempts, setAttempts] = useState<number>(0)
 
   if (!isOpen) return null
@@ -49,12 +49,12 @@ export default function SubmissionModal({
     setSubmitting(true)
     setError(null)
     setEvaluationResult(null)
-    
+
     const currentAttempt = attempts + 1
     setAttempts(currentAttempt)
 
     try {
-      // Step 7: Calling the new conceptual evaluator endpoint
+      // Conceptual evaluator: separate from Judge0 / adaptive engine
       const response = await fetch('/api/evaluate-answer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -90,6 +90,15 @@ export default function SubmissionModal({
       onClose()
     }
   }
+
+  // Normalised fields (supports both camelCase and snake_case)
+  const verdict = evaluationResult?.verdict ?? ''
+  const strengths = evaluationResult?.strengths ?? []
+  const mistakes = evaluationResult?.mistakes ?? []
+  const missingConcepts =
+    evaluationResult?.missingConcepts ?? evaluationResult?.missing_concepts ?? []
+  const nextStep = evaluationResult?.nextStep ?? evaluationResult?.next_step
+  const score = evaluationResult?.conceptualScore ?? evaluationResult?.conceptual_score
 
   return (
     <div
@@ -131,7 +140,7 @@ export default function SubmissionModal({
                 <span className="text-[10px] font-mono text-[#73706D]">Attempt {attempts}</span>
               )}
             </div>
-            
+
             {!evaluationResult ? (
               <div className="rounded-xl border border-[#292725] bg-[#11100F] p-4 text-sm text-[#D0D0D0] space-y-3 font-sans">
                 <p className="font-semibold text-white">
@@ -145,57 +154,75 @@ export default function SubmissionModal({
               // The Dedicated Verdict Card
               <div
                 className={`rounded-xl border p-5 text-sm space-y-4 animate-in fade-in slide-in-from-bottom-2 ${
-                  evaluationResult.verdict === 'PASS'
+                  verdict === 'PASS'
                     ? 'border-emerald-500/40 bg-emerald-950/20'
-                    : evaluationResult.verdict === 'PARTIAL'
+                    : verdict === 'PARTIAL'
                     ? 'border-amber-500/40 bg-amber-950/20'
-                    : 'border-red-500/40 bg-red-950/20'
+                    : verdict === 'FAIL'
+                    ? 'border-red-500/40 bg-red-950/20'
+                    : 'border-[#292725] bg-[#11100F]'
                 }`}
                 role="status"
               >
                 <div className="flex items-center justify-between border-b border-[#292725] pb-3">
                   <div className="font-semibold text-white flex items-center gap-2">
-                    {evaluationResult.verdict === 'PASS' && <span className="text-emerald-400">✓ Concept Mastered</span>}
-                    {evaluationResult.verdict === 'PARTIAL' && <span className="text-amber-400">⚠ Partial Understanding</span>}
-                    {evaluationResult.verdict === 'FAIL' && <span className="text-red-400">✕ Conceptual Gap Detected</span>}
+                    {verdict === 'PASS' && <span className="text-emerald-400">✓ Concept Mastered</span>}
+                    {verdict === 'PARTIAL' && <span className="text-amber-400">⚠ Partial Understanding</span>}
+                    {verdict === 'FAIL' && <span className="text-red-400">✕ Conceptual Gap Detected</span>}
+                    {!['PASS', 'PARTIAL', 'FAIL'].includes(verdict) && (
+                      <span className="text-[#D0D0D0]">Evaluation complete</span>
+                    )}
                   </div>
                   <div className="text-xs font-mono text-[#A8A39E]">
-                    Score: {evaluationResult.conceptual_score ?? evaluationResult.conceptualScore ?? '--'}/100
+                    {/* Scale unconfirmed: ask Anshika if it's 0-100 or 0-1 */}
+                    Score: {score ?? '--'}/100
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <p className="text-sm text-[#D0D0D0] leading-relaxed">
+                  <p className="text-sm text-[#D0D0D0] leading-relaxed break-words">
                     {evaluationResult.feedback}
                   </p>
 
-                  {/* Dynamic Strengths & Weaknesses Arrays */}
-                  <div className="grid grid-cols-2 gap-4 pt-2">
-                    {evaluationResult.strengths && evaluationResult.strengths.length > 0 && (
+                  <div className="space-y-3 pt-2">
+                    {strengths.length > 0 && (
                       <div>
                         <h4 className="text-[10px] uppercase tracking-wider text-emerald-400/80 mb-1">Strengths</h4>
                         <ul className="list-disc list-inside text-xs text-[#9A9692] space-y-1">
-                          {evaluationResult.strengths.map((s, i) => <li key={i} className="truncate">{s}</li>)}
+                          {strengths.map((s, i) => (
+                            <li key={i} className="break-words">{s}</li>
+                          ))}
                         </ul>
                       </div>
                     )}
-                    
-                    {(evaluationResult.mistakes || evaluationResult.missing_concepts || evaluationResult.missingConcepts) && (
+
+                    {mistakes.length > 0 && (
+                      <div>
+                        <h4 className="text-[10px] uppercase tracking-wider text-amber-400/80 mb-1">Mistakes</h4>
+                        <ul className="list-disc list-inside text-xs text-[#9A9692] space-y-1">
+                          {mistakes.map((m, i) => (
+                            <li key={i} className="break-words">{m}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {missingConcepts.length > 0 && (
                       <div>
                         <h4 className="text-[10px] uppercase tracking-wider text-red-400/80 mb-1">Missing Concepts</h4>
                         <ul className="list-disc list-inside text-xs text-[#9A9692] space-y-1">
-                          {(evaluationResult.mistakes || evaluationResult.missing_concepts || evaluationResult.missingConcepts || []).map((m, i) => (
-                            <li key={i} className="truncate">{m}</li>
+                          {missingConcepts.map((m, i) => (
+                            <li key={i} className="break-words">{m}</li>
                           ))}
                         </ul>
                       </div>
                     )}
                   </div>
 
-                  {(evaluationResult.next_step || evaluationResult.nextStep) && (
+                  {nextStep && (
                     <div className="pt-3 border-t border-[#292725]/50 mt-2">
-                      <p className="text-xs text-[#A8A39E]">
-                        <span className="font-semibold text-white">Next Step:</span> {evaluationResult.next_step || evaluationResult.nextStep}
+                      <p className="text-xs text-[#A8A39E] break-words">
+                        <span className="font-semibold text-white">Next Step:</span> {nextStep}
                       </p>
                     </div>
                   )}

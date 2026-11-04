@@ -2,7 +2,13 @@
 
 import React, { useState } from 'react'
 import type { GeneratedProblem, Difficulty } from '@/lib/ai/problem-types'
-import type { Judge0Response, Judge0TestResult } from '@/types/api'
+import type {
+  Judge0Response,
+  Judge0TestResult,
+  Judge0Verdict,
+  AdaptiveInput,
+  AdaptiveOutput,
+} from '@/types/api'
 import { LANGUAGES, runAndVerify, type LanguageId } from '@/lib/services/judgeService'
 import { STARTERS } from '@/lib/starterCode'
 
@@ -12,13 +18,12 @@ type Props = {
   currentDifficulty: Difficulty
 }
 
-// Adaptive Engine response contract
-type AdaptiveFeedback = {
-  nextDifficulty: Difficulty
-  action: 'increase' | 'maintain' | 'retry' | 'retry_later'
-  updateLearningPerformance: boolean
-  reason: string
-}
+// Service problems mean "retry later", so the student isn't punished
+const SERVICE_ERRORS: Judge0Verdict[] = [
+  'SERVICE_UNAVAILABLE',
+  'RATE_LIMITED',
+  'SERVICE_ERROR',
+]
 
 // Turn Judge0's raw failure into a clear label
 function describeFailure(r?: Judge0TestResult): { label: string; detail: string | null } {
@@ -44,12 +49,12 @@ export default function RunVerifyPanel({ testCases, hintsUsed, currentDifficulty
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<Judge0Response | null>(null)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Track attempts locally for the adaptive engine
   const [attempts, setAttempts] = useState(0)
-  
-  // Store the adaptive engine's recommendation
-  const [adaptiveFeedback, setAdaptiveFeedback] = useState<AdaptiveFeedback | null>(null)
+
+  // Adaptive engine's recommendation (code-execution signal only)
+  const [adaptiveFeedback, setAdaptiveFeedback] = useState<AdaptiveOutput | null>(null)
 
   const handleRun = async () => {
     setError(null)
@@ -66,36 +71,44 @@ export default function RunVerifyPanel({ testCases, hintsUsed, currentDifficulty
     setAttempts(currentAttempt)
 
     try {
-      const res = await runAndVerify(code, languageId, testCases)
+      const raw = await runAndVerify(code, languageId, testCases)
+
+      // Stopgap: never keep hidden expected outputs in UI state
+      const res: Judge0Response = {
+        ...raw,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        results: raw.results?.map(({ expected_output, ...rest }) => rest),
+      }
       setResult(res)
 
-      // Step 3: Adaptive Engine Adapter
-      // We explicitly treat network/service errors as "Retry Later" to avoid punishing the student
-      const isServiceError = ['SERVICE_UNAVAILABLE', 'RATE_LIMITED', 'SERVICE_ERROR'].includes(res.verdict)
-
-      if (!isServiceError) {
+      // Adaptive engine: service errors are "retry later", so skip them
+      const verdict = res.verdict
+      if (verdict && !SERVICE_ERRORS.includes(verdict)) {
         try {
-          // Format strictly to Anshika's required adaptive engine shape
+          const payload: AdaptiveInput = {
+            currentDifficulty,
+            verdict,
+            accepted: res.accepted === true,
+            attempts: currentAttempt,
+            hintsUsed,
+          }
+
           const adaptiveRes = await fetch('/api/adaptive-engine/evaluate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              currentDifficulty,
-              verdict: res.verdict,
-              accepted: res.accepted,
-              attempts: currentAttempt,
-              hintsUsed,
-            }),
+            body: JSON.stringify(payload),
           })
 
           if (adaptiveRes.ok) {
-            const adaptiveAction: AdaptiveFeedback = await adaptiveRes.json()
+            const adaptiveAction: AdaptiveOutput = await adaptiveRes.json()
             setAdaptiveFeedback(adaptiveAction)
-            
-            // "Only write to learning performance when it’s true"
+
+            // Only write to learning performance when this is true
             if (adaptiveAction.updateLearningPerformance) {
               console.log('[Adaptive Engine] Mastery metrics updated based on submission.')
             }
+          } else {
+            console.warn('[Adaptive Engine] Route returned', adaptiveRes.status)
           }
         } catch (adaptiveErr) {
           console.warn('[Adaptive Engine] Adapter sync failed:', adaptiveErr)
@@ -237,14 +250,14 @@ export default function RunVerifyPanel({ testCases, hintsUsed, currentDifficulty
       <div aria-live="polite" className="space-y-4">
         {error && <p className="text-sm text-red-400">{error}</p>}
         {renderResult()}
-        
+
         {/* Adaptive Engine Output Card */}
         {adaptiveFeedback && (
           <div className="animate-in fade-in slide-in-from-bottom-2 mt-2 rounded-xl border border-[#A78BFA]/30 bg-[#A78BFA]/10 p-4 space-y-3">
             <div className="flex items-center justify-between border-b border-[#A78BFA]/20 pb-2">
               <h4 className="text-sm font-semibold text-[#D0BFFF]">Adaptive Engine Feedback</h4>
               <span className="rounded bg-[#A78BFA]/20 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-[#D0BFFF]">
-                Action: {adaptiveFeedback.action.replace('_', ' ')}
+                Action: {adaptiveFeedback.action.replace(/_/g, ' ')}
               </span>
             </div>
             <p className="text-sm text-[#D0D0D0] leading-relaxed">
