@@ -22,7 +22,7 @@ export interface GenerateOptions {
   previousProblemType?: ProblemType
 }
 
-export const SUPPORTED_PATTERNS = ['Two Pointers', 'Sliding Window', 'Arrays']
+
 
 export async function generateProblem(
   pattern: DSAPattern,
