@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { getMasterySummary, type MasterySummary } from '@/lib/services/progressService'
 
 // --- Helper Animated Counter ---
 function AnimatedNumber({ value, suffix = '', duration = 900 }: { value: number; suffix?: string; duration?: number }) {
@@ -32,23 +33,81 @@ function DemoTag() {
   )
 }
 
-export default function DashboardPage() {
-  const [isLoading, setIsLoading] = useState(true)
-  const [chartHoverIndex, setChartHoverIndex] = useState<number | null>(null)
+// Chart helpers: lines now pass through the real data points
+const chartX = (idx: number, count: number) => (idx / Math.max(count - 1, 1)) * 680 + 10
+const chartY = (value: number) => 200 - (value / 100) * 180
 
-  // Simulation of initial render
+function buildLine(values: number[]) {
+  return values
+    .map((v, i) => `${i === 0 ? 'M' : 'L'} ${chartX(i, values.length)} ${chartY(v)}`)
+    .join(' ')
+}
+
+function buildArea(values: number[]) {
+  if (values.length === 0) return ''
+  return `${buildLine(values)} L ${chartX(values.length - 1, values.length)} 200 L ${chartX(0, values.length)} 200 Z`
+}
+
+// --- Page: loads data, then renders the view ---
+export default function DashboardPage() {
+  const [summary, setSummary] = useState<MasterySummary | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 800)
-    return () => clearTimeout(timer)
+    let cancelled = false
+    getMasterySummary()
+      .then((data) => {
+        if (!cancelled) setSummary(data)
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setLoadError(err instanceof Error ? err.message : 'Could not load your progress.')
+        }
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
-  // Research Mock Metrics
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-[#070706] px-4 pt-16 text-white">
+        <div role="alert" className="mx-auto max-w-md rounded-2xl border border-red-900/40 bg-red-950/20 p-6 text-center text-sm text-red-300">
+          {loadError}
+        </div>
+      </div>
+    )
+  }
+
+  if (!summary) {
+    return (
+      <div className="min-h-screen bg-[#070706] text-white">
+        <div role="status" aria-live="polite" className="mx-auto max-w-[1280px] px-4 pt-8 sm:px-6 lg:px-8">
+          <div className="mb-8 h-8 w-64 animate-pulse rounded bg-[#1C1A18]" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-32 animate-pulse rounded-2xl bg-[#0E0D0C]" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return <DashboardView summary={summary} />
+}
+
+function DashboardView({ summary }: { summary: MasterySummary }) {
+  const [chartHoverIndex, setChartHoverIndex] = useState<number | null>(null)
+
+  const { stats: s, distribution, performanceTrend, retentionQueue, weeklyActivity, roadmap } = summary
+
   const stats = [
     {
       title: 'Active Learning Paths',
-      value: 3,
+      value: s.activePaths,
       suffix: '',
-      change: '2 in active practice',
+      change: `${s.activePathsInPractice} in active practice`,
       gradient: 'from-emerald-500/20 via-emerald-500/5 to-transparent',
       border: 'hover:border-emerald-500/40',
       iconBg: 'bg-emerald-950/40 text-emerald-400 border-emerald-500/30',
@@ -60,9 +119,9 @@ export default function DashboardPage() {
     },
     {
       title: 'Patterns Mastered',
-      value: 8,
+      value: s.patternsMastered,
       suffix: '',
-      change: '+2 this month',
+      change: `+${s.masteredThisMonth} this month`,
       gradient: 'from-violet-500/20 via-violet-500/5 to-transparent',
       border: 'hover:border-violet-500/40',
       iconBg: 'bg-violet-950/40 text-violet-400 border-violet-500/30',
@@ -74,9 +133,9 @@ export default function DashboardPage() {
     },
     {
       title: 'Transfer Gap Delta',
-      value: 24,
+      value: s.transferGapPct,
       suffix: '%',
-      change: 'Target: <15% delta',
+      change: `Target: <${s.transferGapTargetPct}% delta`,
       gradient: 'from-cyan-500/20 via-cyan-500/5 to-transparent',
       border: 'hover:border-cyan-500/40',
       iconBg: 'bg-cyan-950/40 text-cyan-400 border-cyan-500/30',
@@ -88,7 +147,7 @@ export default function DashboardPage() {
     },
     {
       title: 'Audit Streak',
-      value: 5,
+      value: s.auditStreakDays,
       suffix: 'd',
       change: 'Retention protected',
       gradient: 'from-amber-500/20 via-amber-500/5 to-transparent',
@@ -102,57 +161,22 @@ export default function DashboardPage() {
     },
   ]
 
-  // Dual-Track Transfer Comparison Plot Data (7 sessions)
-  const performanceTrend = [
-    { session: 'S1', recall: 70, transfer: 45 },
-    { session: 'S2', recall: 75, transfer: 50 },
-    { session: 'S3', recall: 80, transfer: 54 },
-    { session: 'S4', recall: 82, transfer: 60 },
-    { session: 'S5', recall: 85, transfer: 58 },
-    { session: 'S6', recall: 90, transfer: 65 },
-    { session: 'S7', recall: 88, transfer: 64 },
-  ]
+  // Donut geometry computed from real counts
+  const circumference = 2 * Math.PI * 38
+  const donutTotal = Math.max(distribution.total, 1)
+  const masteredLen = (distribution.mastered / donutTotal) * circumference
+  const decayingLen = (distribution.decaying / donutTotal) * circumference
+  const lockedLen = (distribution.locked / donutTotal) * circumference
 
-  // Retention Scheduler Items (SM-2)
-  const retentionQueue = [
-    {
-      pattern: 'Two Pointers (Opposing)',
-      slug: 'two-pointers',
-      urgency: 'Overdue (2d)',
-      level: 'high',
-      retentionScore: 42,
-    },
-    {
-      pattern: 'Sliding Window (Fixed)',
-      slug: 'sliding-window',
-      urgency: 'Due today',
-      level: 'medium',
-      retentionScore: 58,
-    },
-    {
-      pattern: 'Prefix Sum Lookups',
-      slug: 'two-pointers',
-      urgency: 'In 2 days',
-      level: 'low',
-      retentionScore: 71,
-    },
-  ]
+  const recallValues = performanceTrend.map((p) => p.recall)
+  const transferValues = performanceTrend.map((p) => p.transfer)
 
-  // 7-day Activity Strip
-  const weeklyActivity = [
-    { day: 'Mon', val: 55, active: true },
-    { day: 'Tue', val: 80, active: true },
-    { day: 'Wed', val: 40, active: true },
-    { day: 'Thu', val: 95, active: true },
-    { day: 'Fri', val: 65, active: true },
-    { day: 'Sat', val: 100, active: true },
-    { day: 'Sun', val: 75, active: true },
-  ]
+  const roadmapPct = Math.round((roadmap.lessonsCompleted / Math.max(roadmap.lessonsTotal, 1)) * 100)
 
   return (
     <div className="min-h-screen bg-[#070706] text-white selection:bg-[#A78BFA]/30 pb-20">
       <div className="mx-auto max-w-[1280px] px-4 pt-8 sm:px-6 lg:px-8">
-        
+
         {/* --- Top Welcome & Quick Action Bar --- */}
         <header className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
@@ -193,29 +217,27 @@ export default function DashboardPage() {
             </Link>
           </div>
         </header>
-        <div role="note" className="mb-6 rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-[13px] text-amber-200">
-  <span className="font-semibold">Demo data.</span> The stats, charts, retention queue, resume card and activity bars on this page are sample values, not your real progress. Real tracking will be connected once the progress database is agreed.
-</div>
 
-        {/* --- Top 4 Vibrant Highlight Cards --- */}
+        {summary.isDemo && (
+          <div role="note" className="mb-6 rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-[13px] text-amber-200">
+            <span className="font-semibold">Demo data.</span> The stats, charts, retention queue, resume card and activity bars on this page are sample values, not your real progress. Real tracking will be connected once the progress database is agreed.
+          </div>
+        )}
+
+        {/* --- Top 4 Highlight Cards --- */}
         <section aria-label="Quick metrics" className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((item, i) => (
             <div
               key={i}
               className={`group relative overflow-hidden rounded-2xl border border-[#242220] bg-[#0E0D0C] p-5 transition-all duration-300 ${item.border} hover:-translate-y-0.5 hover:shadow-xl`}
             >
-              {/* Subtle top ambient glow gradient */}
               <div className={`pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b ${item.gradient} opacity-50 transition-opacity group-hover:opacity-100`} />
 
               <div className="relative z-10 flex items-start justify-between">
                 <div>
                   <p className="text-xs font-medium text-[#9A9692]">{item.title}</p>
                   <p className="mt-2 text-3xl font-extrabold tracking-tight text-white">
-                    {isLoading ? (
-                      <span className="inline-block h-8 w-14 animate-pulse rounded bg-[#1C1A18]" />
-                    ) : (
-                      <AnimatedNumber value={item.value} suffix={item.suffix} />
-                    )}
+                    <AnimatedNumber value={item.value} suffix={item.suffix} />
                   </p>
                 </div>
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${item.iconBg}`}>
@@ -232,14 +254,14 @@ export default function DashboardPage() {
 
         {/* --- Bento Grid Main Workspace (2 : 1 Split) --- */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          
+
           {/* ================= LEFT 2 COLUMNS ================= */}
           <div className="space-y-6 lg:col-span-2">
-            
+
             {/* 1. Weekly Fundamentals Audit Banner */}
             <section aria-label="Weekly audit" className="relative overflow-hidden rounded-2xl border border-[#3E2D1D] bg-gradient-to-r from-[#1C130B] via-[#140F0B] to-[#0E0D0C] p-6 shadow-xl">
               <div className="absolute right-0 top-0 -mr-16 -mt-16 h-48 w-48 rounded-full bg-amber-500/10 blur-3xl" />
-              
+
               <div className="relative z-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
@@ -276,20 +298,19 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            {/* 2. Interactive Transfer Gap & Recall Trend Chart */}
+            {/* 2. Transfer Gap & Recall Trend Chart */}
             <section aria-label="Transfer Gap curve" className="rounded-2xl border border-[#242220] bg-[#0E0D0C] p-6 shadow-xl">
               <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-base font-bold text-white">Transfer Gap vs. Recall Trend</h3>
-                    <DemoTag />
+                    {summary.isDemo && <DemoTag />}
                   </div>
                   <p className="mt-0.5 text-xs text-[#9A9692]">
                     Comparing familiar seed accuracy against novel variation transfer across recent sessions.
                   </p>
                 </div>
 
-                {/* Legend Indicators */}
                 <div className="flex items-center gap-4 text-xs font-medium">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
@@ -302,98 +323,80 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Vector SVG Multi-Line Chart */}
               <div className="relative h-56 w-full pt-4">
-                <svg className="h-full w-full overflow-visible" viewBox="0 0 700 200" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="recallGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#34D399" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#34D399" stopOpacity="0.0" />
-                    </linearGradient>
-                    <linearGradient id="transferGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#A78BFA" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#A78BFA" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
+                {performanceTrend.length < 2 ? (
+                  <div className="flex h-full items-center justify-center text-sm text-[#73706D]">
+                    Complete a few sessions to see your trend.
+                  </div>
+                ) : (
+                  <>
+                    <svg className="h-full w-full overflow-visible" viewBox="0 0 700 200" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="recallGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#34D399" stopOpacity="0.25" />
+                          <stop offset="100%" stopColor="#34D399" stopOpacity="0.0" />
+                        </linearGradient>
+                        <linearGradient id="transferGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#A78BFA" stopOpacity="0.25" />
+                          <stop offset="100%" stopColor="#A78BFA" stopOpacity="0.0" />
+                        </linearGradient>
+                      </defs>
 
-                  {/* Horizontal grid guide lines */}
-                  {[0.2, 0.4, 0.6, 0.8].map((ratio, idx) => (
-                    <line
-                      key={idx}
-                      x1="0"
-                      y1={200 * ratio}
-                      x2="700"
-                      y2={200 * ratio}
-                      stroke="#1A1816"
-                      strokeDasharray="4 4"
-                    />
-                  ))}
+                      {[0.2, 0.4, 0.6, 0.8].map((ratio, idx) => (
+                        <line
+                          key={idx}
+                          x1="0"
+                          y1={200 * ratio}
+                          x2="700"
+                          y2={200 * ratio}
+                          stroke="#1A1816"
+                          strokeDasharray="4 4"
+                        />
+                      ))}
 
-                  {/* Recall Curve Area & Line */}
-                  <path
-                    d="M 0 60 Q 116 50, 233 40 T 466 30 T 700 24 L 700 200 L 0 200 Z"
-                    fill="url(#recallGradient)"
-                  />
-                  <path
-                    d="M 0 60 Q 116 50, 233 40 T 466 30 T 700 24"
-                    fill="none"
-                    stroke="#34D399"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
+                      {/* Recall */}
+                      <path d={buildArea(recallValues)} fill="url(#recallGradient)" />
+                      <path d={buildLine(recallValues)} fill="none" stroke="#34D399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
-                  {/* Transfer Curve Area & Line */}
-                  <path
-                    d="M 0 110 Q 116 100, 233 92 T 466 84 T 700 72 L 700 200 L 0 200 Z"
-                    fill="url(#transferGradient)"
-                  />
-                  <path
-                    d="M 0 110 Q 116 100, 233 92 T 466 84 T 700 72"
-                    fill="none"
-                    stroke="#A78BFA"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
+                      {/* Transfer */}
+                      <path d={buildArea(transferValues)} fill="url(#transferGradient)" />
+                      <path d={buildLine(transferValues)} fill="none" stroke="#A78BFA" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
-                  {/* Interactive Points */}
-                  {performanceTrend.map((pt, idx) => {
-                    const x = (idx / (performanceTrend.length - 1)) * 680 + 10
-                    const yRecall = 200 - (pt.recall / 100) * 180
-                    const yTransfer = 200 - (pt.transfer / 100) * 180
-                    const isHovered = chartHoverIndex === idx
+                      {/* Interactive Points */}
+                      {performanceTrend.map((pt, idx) => {
+                        const x = chartX(idx, performanceTrend.length)
+                        const isHovered = chartHoverIndex === idx
 
-                    return (
-                      <g key={idx} onMouseEnter={() => setChartHoverIndex(idx)} onMouseLeave={() => setChartHoverIndex(null)}>
-                        {/* Hover bar */}
-                        {isHovered && (
-                          <line x1={x} y1="0" x2={x} y2="200" stroke="#3D3A37" strokeWidth="1" strokeDasharray="3 3" />
-                        )}
+                        return (
+                          <g key={idx} onMouseEnter={() => setChartHoverIndex(idx)} onMouseLeave={() => setChartHoverIndex(null)}>
+                            {isHovered && (
+                              <line x1={x} y1="0" x2={x} y2="200" stroke="#3D3A37" strokeWidth="1" strokeDasharray="3 3" />
+                            )}
+                            <circle cx={x} cy={chartY(pt.recall)} r={isHovered ? 6 : 4} fill="#34D399" className="transition-all" />
+                            <circle cx={x} cy={chartY(pt.transfer)} r={isHovered ? 6 : 4} fill="#A78BFA" className="transition-all" />
+                          </g>
+                        )
+                      })}
+                    </svg>
 
-                        <circle cx={x} cy={yRecall} r={isHovered ? 6 : 4} fill="#34D399" className="transition-all" />
-                        <circle cx={x} cy={yTransfer} r={isHovered ? 6 : 4} fill="#A78BFA" className="transition-all" />
-                      </g>
-                    )
-                  })}
-                </svg>
-
-                {/* X-axis labels */}
-                <div className="mt-3 flex justify-between text-[11px] font-mono text-[#73706D]">
-                  {performanceTrend.map((p, i) => (
-                    <span key={i} className={chartHoverIndex === i ? 'text-white font-bold' : ''}>
-                      {p.session}
-                    </span>
-                  ))}
-                </div>
+                    <div className="mt-3 flex justify-between text-[11px] font-mono text-[#73706D]">
+                      {performanceTrend.map((p, i) => (
+                        <span key={i} className={chartHoverIndex === i ? 'text-white font-bold' : ''}>
+                          {p.session}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* Bottom Insight Callout */}
               <div className="mt-4 flex flex-col justify-between gap-3 rounded-xl border border-[#242220] bg-[#141210] p-3.5 sm:flex-row sm:items-center">
                 <div className="flex items-center gap-2.5 text-xs text-[#D0D0D0]">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#A78BFA]/20 text-[#A78BFA]">
                     Δ
                   </span>
                   <span>
-                    Current Transfer Gap is <strong className="text-white">24%</strong>. Practice novel variants to bring this delta under 15%.
+                    Current Transfer Gap is <strong className="text-white">{s.transferGapPct}%</strong>. Practice novel variants to bring this delta under {s.transferGapTargetPct}%.
                   </span>
                 </div>
                 <Link
@@ -405,12 +408,12 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            {/* 3. Pick Up Where You Left Off Card */}
+            {/* 3. Active Roadmap */}
             <section aria-label="Resume path" className="rounded-2xl border border-[#242220] bg-[#0E0D0C] p-6 shadow-xl">
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h3 className="text-base font-bold text-white">Active Roadmap</h3>
-                  <p className="text-xs text-[#9A9692]">Data Structures & Algorithms Core</p>
+                  <p className="text-xs text-[#9A9692]">{roadmap.title}</p>
                 </div>
                 <Link href="/dashboard/paths" className="text-xs font-semibold text-[#9A9692] hover:text-white transition-colors">
                   View Skill Graph →
@@ -427,14 +430,16 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-white group-hover:text-[#A78BFA] transition-colors">
-                        Next Challenge: Two Pointers (Opposite Direction)
+                        Next Challenge: {roadmap.nextChallenge}
                       </h4>
-                      <p className="text-xs text-[#9A9692]">Lesson 12 of 20 completed · Target: Solve without extra array allocation</p>
+                      <p className="text-xs text-[#9A9692]">
+                        Lesson {roadmap.lessonsCompleted} of {roadmap.lessonsTotal} completed · Target: Solve without extra array allocation
+                      </p>
                     </div>
                   </div>
 
                   <Link
-                    href="/practice/two-pointers"
+                    href={`/practice/${roadmap.nextSlug}`}
                     className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-white px-4 text-xs font-semibold text-[#090807] transition-all hover:bg-[#E5E5E5]"
                   >
                     <span>Resume Practice</span>
@@ -444,151 +449,145 @@ export default function DashboardPage() {
                   </Link>
                 </div>
 
-                {/* Progress bar */}
                 <div className="mt-4">
                   <div className="flex justify-between text-[11px] font-mono text-[#73706D] mb-1.5">
                     <span>Path Progress</span>
-                    <span className="text-white">60%</span>
+                    <span className="text-white">{roadmapPct}%</span>
                   </div>
                   <div className="h-1.5 w-full rounded-full bg-[#201D1A] overflow-hidden">
-                    <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-[#A78BFA] to-white w-[60%]" />
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-[#A78BFA] to-white"
+                      style={{ width: `${roadmapPct}%` }}
+                    />
                   </div>
                 </div>
               </div>
             </section>
           </div>
 
-          {/* ================= RIGHT COLUMN (Intelligence Hub) ================= */}
+          {/* ================= RIGHT COLUMN ================= */}
           <div className="space-y-6">
-            
-            {/* 1. Mastery Distribution Donut Card */}
+
+            {/* 1. Mastery Distribution Donut */}
             <section aria-label="Topic distribution" className="rounded-2xl border border-[#242220] bg-[#0E0D0C] p-6 shadow-xl">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-sm font-bold tracking-tight text-white">Mastery Distribution</h3>
-                <DemoTag />
+                {summary.isDemo && <DemoTag />}
               </div>
 
-              {/* Donut Chart Visual */}
               <div className="flex items-center justify-center py-2">
                 <div className="relative flex h-40 w-40 items-center justify-center">
                   <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="38" stroke="#1A1816" strokeWidth="12" fill="none" />
-                    {/* Mastered: 50% */}
+                    {/* Mastered */}
                     <circle
-                      cx="50"
-                      cy="50"
-                      r="38"
-                      stroke="#34D399"
-                      strokeWidth="12"
-                      strokeDasharray="119.38 238.76"
-                      strokeDashoffset="0"
-                      fill="none"
-                      strokeLinecap="round"
+                      cx="50" cy="50" r="38" stroke="#34D399" strokeWidth="12" fill="none"
+                      strokeDasharray={`${masteredLen} ${circumference}`}
+                      strokeDashoffset={0}
                     />
-                    {/* Decaying: 25% */}
+                    {/* Decaying */}
                     <circle
-                      cx="50"
-                      cy="50"
-                      r="38"
-                      stroke="#F59E0B"
-                      strokeWidth="12"
-                      strokeDasharray="59.69 238.76"
-                      strokeDashoffset="-125"
-                      fill="none"
-                      strokeLinecap="round"
+                      cx="50" cy="50" r="38" stroke="#F59E0B" strokeWidth="12" fill="none"
+                      strokeDasharray={`${decayingLen} ${circumference}`}
+                      strokeDashoffset={-masteredLen}
                     />
-                    {/* Locked/In-Progress: 25% */}
+                    {/* Unvisited / Locked */}
                     <circle
-                      cx="50"
-                      cy="50"
-                      r="38"
-                      stroke="#6B7280"
-                      strokeWidth="12"
-                      strokeDasharray="59.69 238.76"
-                      strokeDashoffset="-190"
-                      fill="none"
-                      strokeLinecap="round"
+                      cx="50" cy="50" r="38" stroke="#6B7280" strokeWidth="12" fill="none"
+                      strokeDasharray={`${lockedLen} ${circumference}`}
+                      strokeDashoffset={-(masteredLen + decayingLen)}
                     />
                   </svg>
                   <div className="absolute text-center">
-                    <span className="text-2xl font-black text-white">8</span>
+                    <span className="text-2xl font-black text-white">{distribution.total}</span>
                     <p className="text-[10px] uppercase font-semibold text-[#73706D]">Total Topics</p>
                   </div>
                 </div>
               </div>
 
-              {/* Legend Breakdown */}
               <div className="mt-4 space-y-2 border-t border-[#1C1A18] pt-4 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2 text-[#9A9692]">
                     <span className="h-2 w-2 rounded-full bg-emerald-400"></span> Mastered (Retention &gt;75%)
                   </span>
-                  <span className="font-mono text-white">4</span>
+                  <span className="font-mono text-white">{distribution.mastered}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2 text-[#9A9692]">
                     <span className="h-2 w-2 rounded-full bg-amber-400"></span> Decaying (Audit Due)
                   </span>
-                  <span className="font-mono text-white">2</span>
+                  <span className="font-mono text-white">{distribution.decaying}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-2 text-[#9A9692]">
                     <span className="h-2 w-2 rounded-full bg-[#6B7280]"></span> Unvisited / Locked
                   </span>
-                  <span className="font-mono text-white">2</span>
+                  <span className="font-mono text-white">{distribution.locked}</span>
                 </div>
               </div>
             </section>
 
-            {/* 2. Retention Review Queue (SM-2 Spaced Scheduler) */}
+            {/* 2. Retention Review Queue (SM-2) */}
             <section aria-label="Retention queue" className="rounded-2xl border border-[#242220] bg-[#0E0D0C] p-6 shadow-xl">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse"></span>
                   <h3 className="text-sm font-bold tracking-tight text-white">Retention Queue</h3>
                 </div>
-                <span className="text-[10px] font-mono text-[#73706D]">SM-2 · Sample</span>
+                <span className="text-[10px] font-mono text-[#73706D]">
+                  {summary.isDemo ? 'SM-2 · Sample' : 'SM-2'}
+                </span>
               </div>
               <p className="mb-4 text-xs text-[#9A9692]">
                 Scheduled review to halt knowledge decay before it compromises tree prerequisites.
               </p>
 
-              <div className="space-y-2.5">
-                {retentionQueue.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between rounded-xl border border-[#1E1C1A] bg-[#141210] p-3 transition-colors hover:border-[#3D3A37]"
-                  >
-                    <div>
-                      <p className="text-xs font-semibold text-white">{item.pattern}</p>
-                      <div className="mt-1 flex items-center gap-2">
-                        <span
-                          className={`rounded-full px-2 py-0.2 text-[9px] font-semibold uppercase tracking-wider ${
-                            item.level === 'high'
-                              ? 'border border-red-500/30 bg-red-950/40 text-red-300'
-                              : item.level === 'medium'
-                              ? 'border border-amber-500/30 bg-amber-950/40 text-amber-300'
-                              : 'border border-[#333] bg-[#1A1816] text-[#9A9692]'
-                          }`}
-                        >
-                          {item.urgency}
-                        </span>
-                        <span className="text-[10px] font-mono text-[#73706D]">{item.retentionScore}% health</span>
-                      </div>
-                    </div>
-
-                    <Link
-                      href={`/practice/${item.slug}`}
-                      className="inline-flex h-7 items-center justify-center rounded-lg border border-[#333] bg-[#1E1C1A] px-2.5 text-[11px] font-medium text-white transition-colors hover:bg-white hover:text-black"
+              {retentionQueue.length === 0 ? (
+                <p className="rounded-xl border border-[#1E1C1A] bg-[#141210] p-4 text-xs text-[#9A9692]">
+                  Nothing due for review right now.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {retentionQueue.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between rounded-xl border border-[#1E1C1A] bg-[#141210] p-3 transition-colors hover:border-[#3D3A37]"
                     >
-                      Review
-                    </Link>
-                  </div>
-                ))}
-              </div>
+                      <div>
+                        <p className="text-xs font-semibold text-white">{item.pattern}</p>
+                        <div className="mt-1 flex items-center gap-2">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${
+                              item.level === 'high'
+                                ? 'border border-red-500/30 bg-red-950/40 text-red-300'
+                                : item.level === 'medium'
+                                ? 'border border-amber-500/30 bg-amber-950/40 text-amber-300'
+                                : 'border border-[#333] bg-[#1A1816] text-[#9A9692]'
+                            }`}
+                          >
+                            {item.urgency}
+                          </span>
+                          <span className="text-[10px] font-mono text-[#73706D]">{item.retentionScore}% health</span>
+                        </div>
+                      </div>
+
+                      {item.slug ? (
+                        <Link
+                          href={`/practice/${item.slug}`}
+                          className="inline-flex h-7 items-center justify-center rounded-lg border border-[#333] bg-[#1E1C1A] px-2.5 text-[11px] font-medium text-white transition-colors hover:bg-white hover:text-black"
+                        >
+                          Review
+                        </Link>
+                      ) : (
+                        <span className="text-[10px] font-mono uppercase text-[#73706D]">Soon</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
 
-            {/* 3. 7-Day Activity / Consistency Matrix */}
+            {/* 3. 7-Day Consistency */}
             <section aria-label="Activity consistency" className="rounded-2xl border border-[#242220] bg-[#0E0D0C] p-6 shadow-xl">
               <div className="mb-4 flex items-center justify-between">
                 <div>
@@ -596,15 +595,13 @@ export default function DashboardPage() {
                   <p className="text-xs text-[#9A9692]">Active verification &amp; checks</p>
                 </div>
                 <span className="rounded-md border border-emerald-500/30 bg-emerald-950/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
-                  92% Met
+                  {summary.consistencyMetPct}% Met
                 </span>
               </div>
 
-              {/* Weekly Vertical Bars */}
               <div className="flex h-24 items-end justify-between gap-2 pt-2">
                 {weeklyActivity.map((d, i) => (
                   <div key={i} className="group relative flex h-full w-full flex-col justify-end">
-                    {/* Tooltip on hover */}
                     <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 rounded bg-[#201D1A] px-1.5 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100 whitespace-nowrap border border-[#333]">
                       {d.val}%
                     </div>
