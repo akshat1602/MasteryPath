@@ -11,7 +11,8 @@ export default async function SettingsPage({
   const user = await getCurrentUser()
   if (!user) redirect('/login')
 
-  const currentTab = searchParams.tab || 'profile'
+    const { tab } = await searchParams
+  const currentTab = tab || 'profile'
 
   const tabs = [
     { id: 'profile', label: 'Profile' },

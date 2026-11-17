@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import DashboardShell from '@/components/dashboard/DashboardShell'
+import { UserProvider } from '@/components/dashboard/UserContext'
 import { getCurrentUser } from '@/lib/auth/getCurrentUser'
 
 export default async function DashboardLayout({
@@ -19,7 +20,9 @@ export default async function DashboardLayout({
         avatarUrl: user.avatarUrl,
       }}
     >
-      {children}
+      <UserProvider user={{ displayName: user.displayName, email: user.email }}>
+        {children}
+      </UserProvider>
     </DashboardShell>
   )
 }

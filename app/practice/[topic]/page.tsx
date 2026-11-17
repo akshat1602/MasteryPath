@@ -8,6 +8,7 @@ import type { Difficulty, GeneratedProblem, ProblemType } from '@/lib/ai/problem
 import { TOPICS, getTopicBySlug, getAvailableTypes } from '@/lib/topics'
 import RunVerifyPanel from '@/components/RunVerifyPanel'
 import CopyButton from '@/components/CopyButton'
+import ConceptualCheck from '@/components/ConceptualCheck'
 
 // Level for the very first problem. After that, the adaptive engine decides.
 const STARTING_DIFFICULTY: Difficulty = 'Medium'
@@ -399,6 +400,12 @@ export default function PracticeTopicPage() {
             hintsUsed={hintsUsed}
             currentDifficulty={currentDifficulty}
             onAdaptiveResult={(r) => setNextDifficulty(r.nextDifficulty)}
+          />
+          <ConceptualCheck
+            key={`concept-${problemId}`}
+            problemStatement={problem.problemStatement}
+            expectedApproach={problem.expectedApproach}
+            difficulty={currentDifficulty}
           />
         </div>
       )}

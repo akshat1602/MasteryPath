@@ -1,4 +1,3 @@
-
 import {
   REFERENCE_LANGUAGE_ID,
   REFERENCE_SOLUTIONS,
@@ -23,9 +22,11 @@ type Judge0Response = {
 export async function verifyReferenceWithJudge0(
   problem: GeneratedProblem,
   problemType: ProblemType,
+  cookieString: string // <-- Added parameter to accept the session cookies
 ): Promise<boolean> {
   // Only problem types with trusted reference solutions can be verified.
-  const referenceSolution = REFERENCE_SOLUTIONS[problemType as keyof typeof REFERENCE_SOLUTIONS];
+  const referenceSolution =
+    REFERENCE_SOLUTIONS[problemType as keyof typeof REFERENCE_SOLUTIONS];
 
   if (!referenceSolution) {
     return false;
@@ -45,7 +46,10 @@ export async function verifyReferenceWithJudge0(
       `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/judge0/submit`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Cookie": cookieString, // <-- Attached the cookies to bypass the 401 middleware block
+        },
         body: JSON.stringify({
           source_code: referenceSolution,
           language_id: REFERENCE_LANGUAGE_ID,
@@ -56,7 +60,7 @@ export async function verifyReferenceWithJudge0(
       },
     );
 
-        if (!response.ok) {
+    if (!response.ok) {
       console.error(
         "[Judge0 endpoint error]",
         response.status,
@@ -73,7 +77,7 @@ export async function verifyReferenceWithJudge0(
       result.results?.length === testCases.length &&
       result.results.every((test) => test.passed === true)
     );
-    } catch (error) {
+  } catch (error) {
     console.error(
       "[Judge0 verification error]",
       error instanceof Error ? error.message : error,
