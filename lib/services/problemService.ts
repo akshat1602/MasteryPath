@@ -22,40 +22,53 @@ export interface GenerateOptions {
   previousProblemType?: ProblemType
 }
 
-export const SUPPORTED_PATTERNS = ['Two Pointers', 'Sliding Window', 'Arrays']
+// Generation sometimes fails validation at random (about 1 call in 25).
+// One quick retry hides that from students. Only server-side failures are retried.
+const MAX_ATTEMPTS = 2
+const RETRYABLE_STATUSES = new Set([502, 503, 504])
 
 export async function generateProblem(
   pattern: DSAPattern,
   options: GenerateOptions = {}
 ): Promise<GenerateProblemSuccess> {
-  // Enforce Step 2: pattern is required; dynamically append optional fields only if they hold a concrete value
+  // pattern is always sent; optional fields only when they have a real value
   const body: GenerateProblemRequest = { pattern }
-  
   if (options.difficulty) body.difficulty = options.difficulty
   if (options.problemType) body.problemType = options.problemType
-  if (options.previousProblemType) body.previousProblemType = options.previousProblemType
-
-  let res: Response
-  try {
-    res = await fetch('/api/generate-problem', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-  } catch {
-    throw new ApiError('Network error. Check your connection and try again.')
+  if (options.previousProblemType) {
+    body.previousProblemType = options.previousProblemType
   }
 
-  const json = (await res.json().catch(() => null)) as
-    | GenerateProblemSuccess
-    | ApiErrorResponse
-    | null
+  let lastError: ApiError | null = null
 
-  if (!res.ok || !json || ('error' in json)) {
-    const message = json && 'error' in json ? json.error : `Request failed (${res.status})`
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let res: Response
+    try {
+      res = await fetch('/api/generate-problem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    } catch {
+      throw new ApiError('Network error. Check your connection and try again.')
+    }
+
+    const json = (await res.json().catch(() => null)) as
+      | GenerateProblemSuccess
+      | ApiErrorResponse
+      | null
+
+    if (res.ok && json && !('error' in json)) {
+      return json
+    }
+
+    const message =
+      json && 'error' in json ? json.error : `Request failed (${res.status})`
     const details = json && 'details' in json ? json.details : undefined
-    throw new ApiError(message, res.status, details)
+    lastError = new ApiError(message, res.status, details)
+
+    if (!RETRYABLE_STATUSES.has(res.status)) break
   }
 
-  return json
+  throw lastError ?? new ApiError('Request failed')
 }

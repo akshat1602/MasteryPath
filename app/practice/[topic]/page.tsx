@@ -8,9 +8,16 @@ import type { Difficulty, GeneratedProblem, ProblemType } from '@/lib/ai/problem
 import { TOPICS, getTopicBySlug, getAvailableTypes } from '@/lib/topics'
 import RunVerifyPanel from '@/components/RunVerifyPanel'
 import CopyButton from '@/components/CopyButton'
+import ConceptualCheck from '@/components/ConceptualCheck'
 
 // Level for the very first problem. After that, the adaptive engine decides.
 const STARTING_DIFFICULTY: Difficulty = 'Medium'
+
+const DIFFICULTY_OPTIONS: Difficulty[] = ['Easy', 'Medium', 'Hard']
+
+// 'auto' = let the app decide (rotate types / follow the adaptive engine)
+type TypeChoice = ProblemType | 'auto'
+type DifficultyChoice = Difficulty | 'auto'
 
 // Rotate through available types so the same one is not served twice in a row
 function pickNextType(available: ProblemType[], last: ProblemType | null): ProblemType | undefined {
@@ -39,6 +46,10 @@ export default function PracticeTopicPage() {
   const [currentDifficulty, setCurrentDifficulty] = useState<Difficulty>(STARTING_DIFFICULTY)
   const [nextDifficulty, setNextDifficulty] = useState<Difficulty>(STARTING_DIFFICULTY)
 
+  // Student's manual choices ('auto' = app decides)
+  const [typeChoice, setTypeChoice] = useState<TypeChoice>('auto')
+  const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice>('auto')
+
   // Start fresh when the student switches topic
   useEffect(() => {
     setProblem(null)
@@ -47,7 +58,12 @@ export default function PracticeTopicPage() {
     setHintsUsed(0)
     setCurrentDifficulty(STARTING_DIFFICULTY)
     setNextDifficulty(STARTING_DIFFICULTY)
+    setTypeChoice('auto')
+    setDifficultyChoice('auto')
   }, [params.topic])
+
+  // The level the next request will use
+  const effectiveDifficulty: Difficulty = difficultyChoice === 'auto' ? nextDifficulty : difficultyChoice
 
   const handleGenerate = async () => {
     if (!topic?.pattern) return
@@ -56,16 +72,24 @@ export default function PracticeTopicPage() {
     setHintsUsed(0) // Reset hints on new problem
 
     try {
-      const requestedType = pickNextType(getAvailableTypes(topic), currentType)
+      const availableTypes = getAvailableTypes(topic)
+
+      // Manual choice wins, but only if it is still an available type
+      const requestedType =
+        typeChoice !== 'auto' && availableTypes.includes(typeChoice)
+          ? typeChoice
+          : pickNextType(availableTypes, currentType)
+
+      const requestedDifficulty = effectiveDifficulty
 
       const res = await generateProblem(topic.pattern, {
-        difficulty: nextDifficulty,
+        difficulty: requestedDifficulty,
         problemType: requestedType,
         previousProblemType: currentType ?? undefined,
       })
 
       setProblem(res.result)
-      setCurrentDifficulty(nextDifficulty)
+      setCurrentDifficulty(requestedDifficulty)
       setProblemId((n) => n + 1)
       setReferenceVerified(res.validation.referenceVerified)
       setCurrentType(res.problemType ?? requestedType ?? null)
@@ -194,9 +218,53 @@ export default function PracticeTopicPage() {
           {loading
             ? 'Generating… (up to a minute)'
             : problem
-            ? `Generate New Problem · ${nextDifficulty}`
+            ? `Generate New Problem · ${effectiveDifficulty}`
             : 'Generate Problem'}
         </button>
+      </div>
+
+      {/* Selectors: Auto keeps the rotation + adaptive behaviour */}
+      <div className="mb-6 flex flex-col gap-3 rounded-xl border border-[#242220] bg-[#11100F] p-4 sm:flex-row sm:items-end">
+        <div className="flex-1">
+          <label htmlFor="type-choice" className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[#73706D]">
+            Problem type
+          </label>
+          <select
+            id="type-choice"
+            value={typeChoice}
+            onChange={(e) => setTypeChoice(e.target.value as TypeChoice)}
+            disabled={loading}
+            className="h-9 w-full rounded-lg border border-[#292725] bg-[#090807] px-3 text-sm text-white outline-none focus:border-white focus:ring-1 focus:ring-white disabled:opacity-50"
+          >
+            <option value="auto">Auto (rotate through types)</option>
+            {topic.problems.map((p) => (
+              <option key={p.id} value={p.id} disabled={p.status !== 'available'}>
+                {p.title}
+                {p.status !== 'available' ? ' · Coming soon' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="sm:w-56">
+          <label htmlFor="difficulty-choice" className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[#73706D]">
+            Difficulty
+          </label>
+          <select
+            id="difficulty-choice"
+            value={difficultyChoice}
+            onChange={(e) => setDifficultyChoice(e.target.value as DifficultyChoice)}
+            disabled={loading}
+            className="h-9 w-full rounded-lg border border-[#292725] bg-[#090807] px-3 text-sm text-white outline-none focus:border-white focus:ring-1 focus:ring-white disabled:opacity-50"
+          >
+            <option value="auto">Auto (adaptive: {nextDifficulty})</option>
+            {DIFFICULTY_OPTIONS.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {topic.problems.length > 0 && (
@@ -332,6 +400,12 @@ export default function PracticeTopicPage() {
             hintsUsed={hintsUsed}
             currentDifficulty={currentDifficulty}
             onAdaptiveResult={(r) => setNextDifficulty(r.nextDifficulty)}
+          />
+          <ConceptualCheck
+            key={`concept-${problemId}`}
+            problemStatement={problem.problemStatement}
+            expectedApproach={problem.expectedApproach}
+            difficulty={currentDifficulty}
           />
         </div>
       )}
