@@ -1,39 +1,27 @@
-export interface AskResponse {
-  answer: string
-  sources: { filename: string; page: number; [key: string]: any }[]
-  hasRelevantMaterial?: boolean
-}
+import type { RagAnswerResponse } from '@/types/api'
 
-export class RagApiError extends Error {
-  constructor(message: string, public status?: number) {
-    super(message)
-    this.name = 'RagApiError'
-  }
-}
+// Kept so existing imports of AskResponse still work
+export type AskResponse = RagAnswerResponse
 
-/**
- * Sends a PDF file and a question to the RAG endpoint for an AI-generated answer.
- */
-export async function askRagQuestion(file: File, question: string): Promise<AskResponse> {
+// POST /api/rag/answer: multipart form with `file` (PDF) and `question`.
+// Do NOT set Content-Type; the browser adds the multipart boundary itself.
+export async function askRagQuestion(file: File, question: string): Promise<RagAnswerResponse> {
   const formData = new FormData()
   formData.append('file', file)
-  formData.append('question', question)
+  formData.append('question', question.trim())
 
+  let res: Response
   try {
-    const res = await fetch('/api/rag/answer', {
-      method: 'POST',
-      body: formData, // fetch automatically sets the correct multipart/form-data boundary
-    })
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => null)
-      throw new RagApiError(errorData?.error || `Request failed with status ${res.status}`, res.status)
-    }
-
-    const data = await res.json()
-    return data as AskResponse
-  } catch (error) {
-    if (error instanceof RagApiError) throw error
-    throw new RagApiError('Network error. Check your connection and try again.')
+    res = await fetch('/api/rag/answer', { method: 'POST', body: formData })
+  } catch {
+    throw new Error('Network error. Check your connection and try again.')
   }
+
+  const json = await res.json().catch(() => null)
+
+  if (!res.ok || !json || 'error' in json) {
+    throw new Error(json?.error ?? `Request failed (${res.status}). Please try again.`)
+  }
+
+  return json as RagAnswerResponse
 }

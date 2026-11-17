@@ -1,4 +1,6 @@
-
+// types/api.ts
+// API contracts between the frontend and the AI/backend routes.
+// CONFIRMED = verified against the real route code.
 
 import type {
   DSAPattern,
@@ -48,7 +50,8 @@ export type Judge0TestResult = {
   status: string
   passed: boolean
   stdout: string | null
-  // WARNING: hidden expected outputs must not reach the browser (Step 4).
+  // WARNING: hidden expected outputs must not reach the browser.
+  // Backend should stop returning this for hidden tests.
   expected_output?: string
   stderr?: string | null
   compile_output?: string | null
@@ -67,8 +70,9 @@ export type Judge0Response = {
   serviceStatus?: number
 }
 
-/* ───────── Adaptive engine (CONFIRMED) ───────── */
+/* ───────── Adaptive engine ───────── */
 // Fed by code-execution results ONLY, never by the conceptual evaluator.
+// NOTE: there is no HTTP route for this yet; the logic lives in lib/ai/adaptive-engine.ts.
 
 export type AdaptiveVerdict = Judge0Verdict
 
@@ -89,29 +93,56 @@ export type AdaptiveOutput = {
   reason: string
 }
 
-/* ───────── POST /api/rag/answer (PARTIALLY CONFIRMED) ───────── */
+/* ───────── POST /api/rag/answer (CONFIRMED from route) ───────── */
 // Request is multipart/form-data: file (PDF) + question (string), so no JSON type.
+// No page numbers: only totalPages is returned.
 
-// UNCONFIRMED: exact fields (page numbers especially)
-export type RagSource = Record<string, unknown>
+export type RagSource = {
+  chunkIndex: number
+  score: number
+  text: string
+}
 
-// UNCONFIRMED: provider/model info
-export type RagMetadata = Record<string, unknown>
+export type RagMetadata = {
+  provider: string
+  model: string
+  totalPages: number
+  totalChunks: number
+  retrievedChunks: number
+}
 
 export type RagAnswerResponse = {
   answer: string
   sources: RagSource[]
-  metadata: RagMetadata
+  // Missing on the "no readable text" and "no relevant chunks" replies
+  metadata?: RagMetadata
 }
 
-/* ───────── POST /api/evaluate-answer (UNCONFIRMED field names) ───────── */
+/* ───────── POST /api/evaluate-answer (CONFIRMED from route) ───────── */
+// Conceptual AI assessment only. Code correctness comes from Judge0.
+
+export type EvaluationVerdict =
+  | 'CORRECT'
+  | 'PARTIALLY_CORRECT'
+  | 'INCORRECT'
+  | 'NEEDS_CLARIFICATION'
+
+export type EvaluateAnswerRequest = {
+  problemStatement: string
+  expectedApproach: string
+  studentAnswer: string
+  studentCode?: string
+  difficulty?: Difficulty
+}
 
 export type EvaluateAnswerResponse = {
-  verdict?: string
-  conceptualScore?: number
-  strengths?: string[]
-  mistakes?: string[]
-  missingConcepts?: string[]
-  feedback?: string
-  nextStep?: string
+  verdict: EvaluationVerdict
+  conceptualScore: number // integer 0-100
+  strengths: string[]
+  mistakes: string[]
+  missingConcepts: string[]
+  feedback: string
+  nextStep: string
+  verificationStatus: 'AI_CONCEPTUAL_ASSESSMENT_ONLY'
+  model: string
 }
