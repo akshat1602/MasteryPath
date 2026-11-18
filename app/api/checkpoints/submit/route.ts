@@ -88,7 +88,7 @@ export async function POST(request: Request) {
           transfer_gap: updatedGap,
           ease_factor: sm2Result.nextEaseFactor,
           interval_days: sm2Result.nextInterval,
-          consecutive_successes: sm2Result.consecutiveSuccesses, // Corrected snake_case
+          consecutive_successes: sm2Result.consecutiveSuccesses, // Corrected to snake_case
           last_reviewed_at: new Date().toISOString(),
           next_review_at: sm2Result.nextReviewDate.toISOString(),
         },
