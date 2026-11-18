@@ -136,16 +136,26 @@ export default function MasteryGraph({ onNodeSelect }: MasteryGraphProps) {
             (n) => n.data.status !== undefined && n.data.retention !== undefined
           )
 
-          const formattedNodes: TopicFlowNode[] = data.nodes.map((node) => ({
-            ...node,
-            type: node.type || 'topicNode',
-            position: node.position ?? { x: 0, y: 0 },
-            data: {
-              ...node.data,
-              status: node.data.status ?? 'ready',
-              // retention / transferGap stay undefined if missing; TopicNode has its own display fallback
-            },
-          }))
+          const statusById = new Map(data.nodes.map((n) => [n.id, n.data.status]))
+
+          // A topic is unlocked when it has no prerequisites or all of them are mastered
+          const isUnlocked = (id: string) => {
+            const prereqs = data.edges.filter((e) => e.target === id).map((e) => e.source)
+            return prereqs.every((p) => statusById.get(p) === 'mastered')
+          }
+
+          const formattedNodes: TopicFlowNode[] = data.nodes.map((node) => {
+            const apiStatus = node.data.status ?? 'ready'
+            // Backend reports "pending" for untouched topics; show them as practicable
+            // when they have no prerequisites or all prerequisites are mastered
+            const status = apiStatus === 'pending' && isUnlocked(node.id) ? 'ready' : apiStatus
+            return {
+              ...node,
+              type: node.type || 'topicNode',
+              position: node.position ?? { x: 0, y: 0 },
+              data: { ...node.data, status },
+            }
+          })
 
           setNodes(layoutGraph(formattedNodes, data.edges))
           setEdges(data.edges)

@@ -14,6 +14,7 @@ export const TopicNodeDataSchema = z
     retention: z.number().min(0).max(100).optional(),   // percent
     transferGap: z.number().min(0).max(100).optional(), // percent
     nextReviewAt: z.string().nullable().optional(),     // ISO date, for the SM-2 queue
+    transferScore: z.number().min(0).max(100).optional(),
   })
   .passthrough()
 
