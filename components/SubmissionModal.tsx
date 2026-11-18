@@ -1,113 +1,55 @@
-'use client'
+'use client';
+import { useState, useEffect } from 'react';
+import { X, Loader2 } from 'lucide-react';
 
-import React, { useEffect } from 'react'
-import Link from 'next/link'
-import { getTopicBySlug } from '@/lib/topics'
+// Accept allTopics array passed down from MasteryGraph
+export default function SubmissionModal({ isOpen, onClose, currentTopic, allTopics }: any) {
+  const [selectedTopicId, setSelectedTopicId] = useState('');
 
-interface SubmissionModalProps {
-  isOpen: boolean
-  onClose: () => void
-  nodeId: string | null
-  nodeData: any
-}
-
-// The graph node opens this panel. Conceptual evaluation now happens on the practice page,
-// next to the generated problem ("Explain your approach"), because the evaluator needs a
-// specific problem statement and expected approach.
-export default function SubmissionModal({ isOpen, onClose, nodeData }: SubmissionModalProps) {
+  // Sync the dropdown with the node the user clicked on the graph
   useEffect(() => {
-    if (!isOpen) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+    if (currentTopic) {
+      setSelectedTopicId(currentTopic.id);
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [isOpen, onClose])
+  }, [currentTopic]);
 
-  if (!isOpen) return null
-
-  const slug: string | undefined = typeof nodeData?.slug === 'string' ? nodeData.slug : undefined
-  const topic = slug ? getTopicBySlug(slug) : undefined
-  const isReady = topic?.status === 'ready'
-  const availableVariants = topic?.problems.filter((p) => p.status === 'available') ?? []
+  if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="checkpoint-title"
-      onClick={onClose}
-    >
-      <div
-        className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-[#292725] bg-[#11100F] text-white shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#292725] bg-[#090807] px-6 py-4">
-          <div>
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#A78BFA]">
-              {nodeData?.category || 'Topic'}
-            </span>
-            <h2 id="checkpoint-title" className="text-lg font-bold text-white">
-              {nodeData?.label || 'Topic'}
-            </h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+      <div className="w-full max-w-4xl bg-[#090807] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden text-white flex flex-col">
+        
+        {/* Header & Dynamic Dropdown */}
+        <div className="flex justify-between items-center p-5 border-b border-gray-800 bg-[#111111]">
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-bold">Problem Workspace</h2>
+            
+            {/* DYNAMIC TOPIC DROPDOWN */}
+            <select 
+              value={selectedTopicId}
+              onChange={(e) => setSelectedTopicId(e.target.value)}
+              className="bg-gray-900 border border-gray-700 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2"
+            >
+              {allTopics?.map((topic: any) => (
+                <option key={topic.id} value={topic.id}>
+                  {topic.data.label}
+                </option>
+              ))}
+            </select>
+
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="rounded-lg p-2 text-[#9A9692] transition-colors hover:bg-white/5 hover:text-white"
-          >
-            ✕
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-white rounded-md hover:bg-gray-800 transition-colors">
+            <X size={20} />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="space-y-5 overflow-y-auto p-6">
-          {nodeData?.description && (
-            <p className="text-sm leading-relaxed text-[#D0D0D0]">{String(nodeData.description)}</p>
-          )}
-
-          {typeof nodeData?.estimatedMinutes === 'number' && (
-            <p className="text-xs text-[#9A9692]">Estimated time: {nodeData.estimatedMinutes} min</p>
-          )}
-
-          {isReady ? (
-            <>
-              {availableVariants.length > 0 && (
-                <div>
-                  <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[#73706D]">
-                    Problem types available
-                  </h3>
-                  <ul className="space-y-1.5 text-xs text-[#D0D0D0]">
-                    {availableVariants.map((p) => (
-                      <li key={p.id} className="rounded-lg border border-[#242220] bg-[#141210] px-3 py-2">
-                        {p.title}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="rounded-xl border border-[#292725] bg-[#141210] p-4 text-xs leading-relaxed text-[#9A9692]">
-                Practise this topic to generate a verified problem, run your code, and explain your approach for an
-                AI conceptual check.
-              </div>
-
-              <Link
-                href={`/practice/${topic!.slug}`}
-                className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-white text-sm font-semibold text-[#090807] transition-all hover:bg-[#E5E5E5]"
-              >
-                Practice this topic →
-              </Link>
-            </>
-          ) : (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-4 text-sm text-amber-200">
-              This topic isn&apos;t available for practice yet. It will unlock once its problem generation is ready.
-            </div>
-          )}
+        {/* ... Rest of your split-pane modal UI ... */}
+        <div className="p-5 flex gap-4 min-h-[400px]">
+           <div className="flex-1 border border-gray-800 rounded-lg p-4">Left Panel: AI Problem</div>
+           <div className="flex-1 border border-gray-800 rounded-lg p-4">Right Panel: Code Input</div>
         </div>
+
       </div>
     </div>
-  )
+  );
 }
