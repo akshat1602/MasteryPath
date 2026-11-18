@@ -1,11 +1,19 @@
 {
   "topics": [
     {
-      "slug": "arrays-hashing",
-      "title": "Arrays & Hashing",
+      "slug": "arrays",
+      "title": "Arrays",
       "description": "Fundamental memory structures and constant-time key-value lookups.",
       "estimated_minutes": 45,
       "pattern_key": "arrays_hashing",
+      "prerequisites": []
+    },
+    {
+      "slug": "strings",
+      "title": "Strings",
+      "description": "Sequence of characters.",
+      "estimated_minutes": 45,
+      "pattern_key": "strings",
       "prerequisites": []
     },
     {
@@ -14,7 +22,7 @@
       "description": "Technique using two indices to traverse an iterable structure.",
       "estimated_minutes": 30,
       "pattern_key": "two_pointer",
-      "prerequisites": ["arrays-hashing"]
+      "prerequisites": ["arrays", "strings"]
     },
     {
       "slug": "sliding-window",
@@ -25,12 +33,12 @@
       "prerequisites": ["two-pointers"]
     },
     {
-      "slug": "stack",
-      "title": "Stack",
+      "slug": "stacks",
+      "title": "Stacks",
       "description": "LIFO (Last-In-First-Out) data structure for tracking state.",
       "estimated_minutes": 30,
       "pattern_key": "stack",
-      "prerequisites": ["arrays-hashing"]
+      "prerequisites": ["arrays"]
     },
     {
       "slug": "binary-search",
@@ -41,36 +49,36 @@
       "prerequisites": ["two-pointers"]
     },
     {
-      "slug": "linked-list",
-      "title": "Linked List",
+      "slug": "linked-lists",
+      "title": "Linked Lists",
       "description": "Sequential collection of nodes containing data and pointers.",
       "estimated_minutes": 40,
       "pattern_key": "linked_list",
-      "prerequisites": ["arrays-hashing"]
+      "prerequisites": []
     },
     {
-      "slug": "trees-dfs",
-      "title": "Trees & DFS",
-      "description": "Depth-first search traversal on tree data structures.",
+      "slug": "sorting",
+      "title": "Sorting",
+      "description": "Arranging elements in a specific order.",
+      "estimated_minutes": 45,
+      "pattern_key": "sorting",
+      "prerequisites": ["arrays"]
+    },
+    {
+      "slug": "prefix-sums-difference-arrays",
+      "title": "Prefix Sums & Difference Arrays",
+      "description": "Techniques for efficient range queries and updates.",
       "estimated_minutes": 60,
-      "pattern_key": "tree_dfs",
-      "prerequisites": ["linked-list"]
+      "pattern_key": "prefix_sums",
+      "prerequisites": ["arrays"]
     },
     {
-      "slug": "graphs-bfs",
-      "title": "Graphs & BFS",
-      "description": "Breadth-first search traversal on graphs and matrices.",
-      "estimated_minutes": 75,
-      "pattern_key": "graph_bfs",
-      "prerequisites": ["trees-dfs"]
-    },
-    {
-      "slug": "1d-dp",
-      "title": "1D Dynamic Programming",
-      "description": "Solving complex problems by breaking down into simpler overlapping subproblems.",
-      "estimated_minutes": 90,
-      "pattern_key": "1d_dp",
-      "prerequisites": ["trees-dfs"]
+       "slug": "trees-dfs",
+       "title": "Trees & DFS - Coming soon",
+       "description": "Depth-first search traversal on tree data structures.",
+       "estimated_minutes": 60,
+       "pattern_key": "tree_dfs",
+       "prerequisites": []
     }
   ]
 }
