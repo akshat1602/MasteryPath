@@ -9,11 +9,14 @@ import {
   Controls,
   MiniMap,
   BackgroundVariant,
+  MarkerType,
   type Node,
   type Edge,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import dagre from '@dagrejs/dagre'
 import TopicNode from './TopicNode'
+import { TopicsResponseSchema } from '@/lib/contracts'
 
 export type TopicNodeData = {
   label?: string
@@ -29,67 +32,34 @@ type MasteryGraphProps = {
   onNodeSelect?: (nodeId: string, nodeData: TopicNodeData) => void
 }
 
-// Card footprint (approx.) plus breathing room
-const X_GAP = 240
-const Y_GAP = 160
-const MAX_PER_ROW = 4
+// Approximate card footprint (TopicNode is min-w-[230px])
+const NODE_W = 240
+const NODE_H = 130
 
-// Places each topic one row below its deepest prerequisite (arrows run top to bottom).
-// Rows wider than MAX_PER_ROW wrap so nothing overlaps.
+// Set NEXT_PUBLIC_USE_MOCKS=true in .env.local to force the sample graph
+const USE_MOCKS = process.env.NEXT_PUBLIC_USE_MOCKS === 'true'
+
+// Top-down hierarchical layout. Backend {x, y} positions are ignored.
 function layoutGraph(nodes: TopicFlowNode[], edges: Edge[]): TopicFlowNode[] {
-  const ids = new Set(nodes.map((n) => n.id))
-  const prereqs = new Map<string, string[]>()
-  nodes.forEach((n) => prereqs.set(n.id, []))
+  const g = new dagre.graphlib.Graph()
+  g.setDefaultEdgeLabel(() => ({}))
+  g.setGraph({ rankdir: 'TB', nodesep: 60, ranksep: 90, marginx: 20, marginy: 20 })
+
+  nodes.forEach((n) => g.setNode(n.id, { width: NODE_W, height: NODE_H }))
   edges.forEach((e) => {
-    if (ids.has(e.source) && ids.has(e.target)) prereqs.get(e.target)!.push(e.source)
+    if (g.hasNode(e.source) && g.hasNode(e.target)) g.setEdge(e.source, e.target)
   })
 
-  const depth = new Map<string, number>()
-  const visiting = new Set<string>()
+  dagre.layout(g)
 
-  const getDepth = (id: string): number => {
-    const known = depth.get(id)
-    if (known !== undefined) return known
-    if (visiting.has(id)) return 0 // cycle guard
-    visiting.add(id)
-    const parents = prereqs.get(id) ?? []
-    const d = parents.length === 0 ? 0 : Math.max(...parents.map(getDepth)) + 1
-    visiting.delete(id)
-    depth.set(id, d)
-    return d
-  }
-
-  nodes.forEach((n) => getDepth(n.id))
-
-  const layers = new Map<number, TopicFlowNode[]>()
-  nodes.forEach((n) => {
-    const d = depth.get(n.id) ?? 0
-    layers.set(d, [...(layers.get(d) ?? []), n])
+  return nodes.map((n) => {
+    const p = g.node(n.id)
+    // dagre returns the node's center; React Flow wants the top-left corner
+    return { ...n, position: { x: p.x - NODE_W / 2, y: p.y - NODE_H / 2 } }
   })
-
-  const positions = new Map<string, { x: number; y: number }>()
-  let visualRow = 0
-
-  Array.from(layers.keys())
-    .sort((a, b) => a - b)
-    .forEach((layerIndex) => {
-      const layerNodes = layers.get(layerIndex) ?? []
-      for (let start = 0; start < layerNodes.length; start += MAX_PER_ROW) {
-        const chunk = layerNodes.slice(start, start + MAX_PER_ROW)
-        chunk.forEach((n, col) => {
-          positions.set(n.id, {
-            x: (col - (chunk.length - 1) / 2) * X_GAP,
-            y: visualRow * Y_GAP,
-          })
-        })
-        visualRow += 1
-      }
-    })
-
-  return nodes.map((n) => ({ ...n, position: positions.get(n.id) ?? n.position }))
 }
 
-// Fallback data so the graph still renders if the API is empty or down
+// Fallback data so the graph still renders if the API is empty, invalid, or down
 const DEMO_NODES: TopicFlowNode[] = [
   {
     id: 'arrays',
@@ -127,44 +97,65 @@ export default function MasteryGraph({ onNodeSelect }: MasteryGraphProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<TopicFlowNode>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
   const [loading, setLoading] = useState<boolean>(true)
+  // True whenever the values on screen are not real mastery data
+  const [usingPlaceholders, setUsingPlaceholders] = useState<boolean>(false)
 
   const nodeTypes = useMemo(() => ({ topicNode: TopicNode }), [])
 
   useEffect(() => {
+    function showDemo() {
+      setNodes(layoutGraph(DEMO_NODES, DEMO_EDGES))
+      setEdges(DEMO_EDGES)
+      setUsingPlaceholders(true)
+    }
+
     async function fetchTopics() {
+      if (USE_MOCKS) {
+        showDemo()
+        setLoading(false)
+        return
+      }
+
       try {
         const response = await fetch('/api/topics')
         if (!response.ok) {
           throw new Error(`Failed to fetch topics (Status ${response.status})`)
         }
-        const data: { nodes?: TopicFlowNode[]; edges?: Edge[] } = await response.json()
 
-        if (data.nodes && data.nodes.length > 0) {
-          const formattedNodes: TopicFlowNode[] = data.nodes.map((node) => {
-            // The DB uses UUIDs for node.id, so match on the label for placeholder values
-            const label = node.data?.label as string
-            return {
-              ...node,
-              type: node.type || 'topicNode',
-              data: {
-                ...node.data,
-                transferGap: node.data?.transferGap ?? (label === 'Two Pointers' ? 26 : label === 'Arrays' ? 10 : undefined),
-                status: node.data?.status ?? (label === 'Two Pointers' ? 'decaying' : label === 'Arrays' ? 'mastered' : 'ready'),
-                retention: node.data?.retention ?? (label === 'Two Pointers' ? 42 : 88),
-              },
-            }
-          })
-          const loadedEdges = data.edges ?? []
-          setNodes(layoutGraph(formattedNodes, loadedEdges))
-          setEdges(loadedEdges)
+        // Validate the response shape against our contract
+        const parsed = TopicsResponseSchema.safeParse(await response.json())
+        if (!parsed.success) {
+          console.warn('Topics response shape mismatch:', parsed.error.issues)
+          throw new Error('Unexpected /api/topics shape')
+        }
+        const data = parsed.data
+
+        if (data.nodes.length > 0) {
+          // Real metrics = the API actually sent status AND retention for every node
+          const hasRealMetrics = data.nodes.every(
+            (n) => n.data.status !== undefined && n.data.retention !== undefined
+          )
+
+          const formattedNodes: TopicFlowNode[] = data.nodes.map((node) => ({
+            ...node,
+            type: node.type || 'topicNode',
+            position: node.position ?? { x: 0, y: 0 },
+            data: {
+              ...node.data,
+              status: node.data.status ?? 'ready',
+              // retention / transferGap stay undefined if missing; TopicNode has its own display fallback
+            },
+          }))
+
+          setNodes(layoutGraph(formattedNodes, data.edges))
+          setEdges(data.edges)
+          setUsingPlaceholders(!hasRealMetrics)
         } else {
-          setNodes(layoutGraph(DEMO_NODES, DEMO_EDGES))
-          setEdges(DEMO_EDGES)
+          showDemo()
         }
       } catch (err) {
         console.warn('API error, falling back to sample graph data:', err)
-        setNodes(layoutGraph(DEMO_NODES, DEMO_EDGES))
-        setEdges(DEMO_EDGES)
+        showDemo()
       } finally {
         setLoading(false)
       }
@@ -184,13 +175,15 @@ export default function MasteryGraph({ onNodeSelect }: MasteryGraphProps) {
 
   return (
     <div className="h-[650px] w-full rounded-2xl border border-[#292725] bg-[#090807] overflow-hidden shadow-2xl relative">
-      {/* Remove this note once real mastery data replaces the placeholder values */}
-      <div
-        role="note"
-        className="absolute left-3 top-3 z-10 max-w-xs rounded-lg border border-amber-500/30 bg-amber-950/60 px-3 py-2 text-[11px] leading-snug text-amber-200 backdrop-blur-sm"
-      >
-        <span className="font-semibold">Sample progress values.</span> Status and retention shown here are placeholders, not your real mastery yet.
-      </div>
+      {/* Only shown while values are placeholders; disappears once real mastery data arrives */}
+      {usingPlaceholders && (
+        <div
+          role="note"
+          className="absolute left-3 top-3 z-10 max-w-xs rounded-lg border border-amber-500/30 bg-amber-950/60 px-3 py-2 text-[11px] leading-snug text-amber-200 backdrop-blur-sm"
+        >
+          <span className="font-semibold">Sample progress values.</span> Status and retention shown here are placeholders, not your real mastery yet.
+        </div>
+      )}
 
       <ReactFlow
         nodes={nodes}
@@ -199,6 +192,11 @@ export default function MasteryGraph({ onNodeSelect }: MasteryGraphProps) {
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         onNodeClick={(_, node) => onNodeSelect?.(node.id, node.data)}
+        defaultEdgeOptions={{
+          type: 'default', // smooth bezier curve
+          style: { stroke: '#4B4845', strokeWidth: 1.5 },
+          markerEnd: { type: MarkerType.ArrowClosed, color: '#4B4845' },
+        }}
         fitView
         fitViewOptions={{ padding: 0.25 }}
         colorMode="dark"
